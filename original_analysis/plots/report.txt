@@ -1,0 +1,11 @@
+[Hypertension]
+  Knockoff (FDR=0.10): 281 SNPs (W_thr=3.631)
+  Bonferroni (p<=5e-8): 84 SNPs
+  Overlap: 65
+  m=312570, -log10(5e-8)=7.301
+
+[Type 2 diabetes]
+  Knockoff (FDR=0.10): 92 SNPs (W_thr=4.073)
+  Bonferroni (p<=5e-8): 46 SNPs
+  Overlap: 36
+  m=312570, -log10(5e-8)=7.301

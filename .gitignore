@@ -1,0 +1,21 @@
+# R package development
+*.tar.gz
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# macOS
+.DS_Store
+
+# R check results
+*.Rcheck/
+
+# Temporary files
+*~
+*.swp
+*.tmp
+
+# Debug files
+debug_*.R
+test_temp_*.R

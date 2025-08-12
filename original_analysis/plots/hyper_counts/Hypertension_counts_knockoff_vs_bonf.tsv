@@ -1,0 +1,2 @@
+trait	FDR_target	W_thr	n_knockoff	n_bonf	n_overlap	m_total	bonf_p_cut	bonf_log10
+Hypertension	0.1	3.63073839346906	281	84	65	312570	5e-08	7.30102999566398
