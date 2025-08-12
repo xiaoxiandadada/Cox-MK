@@ -1,6 +1,4 @@
-# CoxMK
-
-[![R-CMD-check](https://github.com/xiaoxiandadada/Cox-MK/workflows/R-CMD-check/badge.svg)](https://github.com/xiaoxiandadada/Cox-MK/actions)
+# Cox-MK
 
 Cox Regression with Model-X Knockoffs for Survival Analysis
 
@@ -141,24 +139,30 @@ The knockoff method provides finite-sample FDR control by:
 
 If you use this package, please cite:
 
+```
+CoxMK: Cox Regression with Model-X Knockoffs for Survival Analysis
+Yang Chen (yangchen5&#64;stu.scu.edu.cn)
+R package version 0.1.0 (2025)
+https://github.com/xiaoxiandadada/Cox-MK
+```
+
+Or in BibTeX format:
+
 ```bibtex
-@software{CoxMK,
+@software{CoxMK2025,
   title = {CoxMK: Cox Regression with Model-X Knockoffs for Survival Analysis},
   author = {Yang Chen},
-  email = {yangchen5@stu.scu.edu.cn},
   year = {2025},
-  url = {https://github.com/xiaoxiandadada/Cox-MK}
+  url = {https://github.com/xiaoxiandadada/Cox-MK},
+  note = {R package version 0.1.0}
 }
 ```
+
+## Contact
+
+For questions or issues, please contact Yang Chen at yangchen5&#64;stu.scu.edu.cn
 
 ## License
 
 GPL-3
 
-## Contributing
-
-Please read our contributing guidelines and submit pull requests to the development branch.
-
-## Issues
-
-Report bugs and feature requests at: https://github.com/xiaoxiandadada/Cox-MK/issues

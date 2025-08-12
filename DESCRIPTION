@@ -2,10 +2,10 @@ Package: CoxMK
 Type: Package
 Title: Cox Regression with Model-X Knockoffs for Survival Analysis
 Version: 0.1.0
-Author: Your Name <your.email@example.com>
-Maintainer: Your Name <your.email@example.com>
+Author: yangchen <yangchen5@stu.scu.edu.cn>
+Maintainer: yangchen <yangchen5@stu.scu.edu.cn>
 Authors@R: c(
-    person("Your", "Name", email = "your.email@example.com", role = c("aut", "cre")),
+    person("Yang", "Chen", email = "yangchen5@stu.scu.edu.cn", role = c("aut", "cre")),
     person("Contributors", "", role = "ctb")
     )
 Description: Implements Cox regression analysis with Model-X knockoffs for 
