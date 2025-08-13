@@ -9,7 +9,7 @@ calculate_w_statistics(
   knockoff_pvals,
   original_coefs,
   knockoff_coefs,
-  method = "signed_max"
+  method = "mk_median"
 )
 }
 \arguments{
@@ -21,11 +21,12 @@ calculate_w_statistics(
 
 \item{knockoff_coefs}{List of coefficients from knockoff variables}
 
-\item{method}{Method for calculating W statistics ("signed_max", "difference")}
+\item{method}{Method for calculating W statistics ("mk_median", "signed_max", "difference")}
 }
 \value{
 Vector of W statistics
 }
 \description{
 Calculate the W statistics for knockoff variable selection.
+Now includes the original Model-X knockoff statistics method.
 }

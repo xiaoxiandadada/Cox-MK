@@ -1,4 +1,10 @@
-#' Fit Null Cox Model
+#' @title Cox Regression Analysis Functions
+#' @name cox-analysis
+#' @description Functions for Cox regression analysis with Model-X knockoffs
+#' @importFrom stats as.formula
+NULL
+
+#' Fit Null Model
 #'
 #' Fit a Cox proportional hazards model with only covariates (no genetic variants).
 #' This function supports both standard coxph and SPACox for large-scale genetic data.
@@ -211,27 +217,53 @@ cox_knockoff_screen <- function(genotypes, knockoffs, time, status, covariates,
 #' Calculate W Statistics
 #'
 #' Calculate the W statistics for knockoff variable selection.
+#' Now includes the original Model-X knockoff statistics method.
 #'
 #' @param original_pvals P-values from original variables
 #' @param knockoff_pvals List of p-values from knockoff variables
 #' @param original_coefs Coefficients from original variables
 #' @param knockoff_coefs List of coefficients from knockoff variables
-#' @param method Method for calculating W statistics ("signed_max", "difference")
+#' @param method Method for calculating W statistics ("mk_median", "signed_max", "difference")
 #'
 #' @return Vector of W statistics
 #'
 #' @export
 calculate_w_statistics <- function(original_pvals, knockoff_pvals, 
                                   original_coefs, knockoff_coefs,
-                                  method = "signed_max") {
+                                  method = "mk_median") {
   
   p <- length(original_pvals)
   M <- length(knockoff_pvals)
   
-  w_stats <- numeric(p)
-  
-  if (method == "signed_max") {
+  if (method == "mk_median") {
+    # Use the original Model-X knockoff statistics
+    # Convert p-values to test statistics (-log10 transformation)
+    T_0 <- -log10(pmax(original_pvals, 1e-16))
+    
+    # Create matrix of knockoff test statistics
+    T_k <- matrix(NA, nrow = p, ncol = M)
+    for (k in 1:M) {
+      T_k[, k] <- -log10(pmax(knockoff_pvals[[k]], 1e-16))
+    }
+    
+    # Calculate MK statistics
+    mk_stats <- MK.statistic(T_0, T_k, method = 'median')
+    
+    # Return tau statistics as W statistics
+    w_stats <- mk_stats[, 2]  # tau column
+    
+    # Apply sign based on whether original is maximum
+    for (j in 1:p) {
+      if (mk_stats[j, 1] == 0) {  # kappa == 0 means original is maximum
+        w_stats[j] <- abs(w_stats[j])
+      } else {
+        w_stats[j] <- -abs(w_stats[j])
+      }
+    }
+    
+  } else if (method == "signed_max") {
     # Use signed maximum statistic
+    w_stats <- numeric(p)
     for (j in 1:p) {
       # Convert p-values to test statistics (higher is more significant)
       orig_stat <- -log10(pmax(original_pvals[j], 1e-16)) * sign(original_coefs[j])
@@ -244,6 +276,7 @@ calculate_w_statistics <- function(original_pvals, knockoff_pvals,
     }
   } else if (method == "difference") {
     # Use difference of means
+    w_stats <- numeric(p)
     for (j in 1:p) {
       orig_stat <- -log10(pmax(original_pvals[j], 1e-16))
       knockoff_stats <- sapply(1:M, function(k) {

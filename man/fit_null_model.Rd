@@ -2,7 +2,7 @@
 % Please edit documentation in R/cox_analysis.R
 \name{fit_null_model}
 \alias{fit_null_model}
-\title{Fit Null Cox Model}
+\title{Fit Null Model}
 \usage{
 fit_null_model(time, status, covariates, formula = NULL, use_spacox = FALSE)
 }

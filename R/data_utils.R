@@ -93,6 +93,12 @@ read_bed_simple <- function(bed_file, n_samples, n_snps) {
   Matrix::Matrix(genotypes, sparse = TRUE)
 }
 
+#' @title Data Utility Functions
+#' @name data-utils
+#' @description Utility functions for data preparation and validation
+#' @importFrom stats complete.cases na.omit
+NULL
+
 #' Prepare Phenotype Data
 #'
 #' Load and prepare time-to-event phenotype data and covariates.
