@@ -2,12 +2,18 @@
 % Please edit documentation in R/create_knockoffs.R
 \name{create_knockoffs}
 \alias{create_knockoffs}
-\title{Create Model-X Knockoffs}
+\title{Create Model-X Knockoffs for Genetic Data}
 \usage{
 create_knockoffs(
   X,
   pos,
+  sample_ids = NULL,
   M = 5,
+  save_gds = TRUE,
+  output_dir = NULL,
+  chr = 1,
+  start = NULL,
+  end = NULL,
   corr_max = 0.75,
   maxN.neighbor = Inf,
   maxBP.neighbor = 1e+05,
@@ -15,55 +21,61 @@ create_knockoffs(
   thres.ultrarare = 25,
   R2.thres = 1,
   prob.eps = 1e-12,
-  irlba.maxit = 1500,
-  bigmemory = FALSE
+  irlba.maxit = 1500
 )
 }
 \arguments{
 \item{X}{A sparse matrix (n x p) of genotype data where n is the number of 
-samples and p is the number of SNPs. Should be of class dgCMatrix.}
+samples and p is the number of SNPs. Typically coded as 0, 1, 2 for
+genotype dosages.}
 
-\item{pos}{A numeric vector of SNP positions (in base pairs).}
+\item{pos}{A numeric vector of SNP positions (in base pairs) for linkage
+disequilibrium-aware knockoff generation.}
 
-\item{M}{Number of knockoff copies to generate. Default is 5, but users can 
-specify any positive integer. More knockoff copies may improve power but 
-increase computational cost.}
+\item{sample_ids}{A character vector of sample IDs (default: NULL, will generate)}
 
-\item{corr_max}{Maximum correlation threshold for clustering (default: 0.75).}
+\item{M}{Number of knockoff copies to generate (default: 5). More copies
+can improve statistical power but increase computational cost.}
 
-\item{maxN.neighbor}{Maximum number of neighbors to consider (default: Inf).}
+\item{save_gds}{Whether to save knockoffs to GDS format (default: TRUE)}
 
-\item{maxBP.neighbor}{Maximum base pair distance for neighbors (default: 1e5).}
+\item{output_dir}{Directory to save GDS files (default: extdata folder)}
 
-\item{n.AL}{Number of samples for adaptive lasso (default: automatic).}
+\item{chr}{Chromosome number for file naming (default: 1)}
 
-\item{thres.ultrarare}{Threshold for ultra-rare variants (default: 25).}
+\item{start}{Start position for file naming (default: min(pos))}
 
-\item{R2.thres}{R-squared threshold (default: 1).}
+\item{end}{End position for file naming (default: max(pos))}
 
-\item{prob.eps}{Minimum probability value (default: 1e-12).}
+\item{corr_max}{Maximum correlation threshold for clustering variants
+(default: 0.75). Higher values create fewer, larger clusters.}
 
-\item{irlba.maxit}{Maximum iterations for irlba (default: 1500).}
+\item{maxN.neighbor}{Maximum number of neighboring variants to consider 
+for each variant (default: Inf).}
 
-\item{bigmemory}{Whether to use big.matrix for storage (default: FALSE).}
+\item{maxBP.neighbor}{Maximum base pair distance to consider variants as
+neighbors (default: 100,000 bp).}
+
+\item{n.AL}{Number of samples to use for adaptive lasso fitting 
+(default: automatically determined based on sample size).}
+
+\item{thres.ultrarare}{Minimum minor allele count threshold for variant
+inclusion (default: 25).}
+
+\item{R2.thres}{R-squared threshold for model fitting (default: 1).}
+
+\item{prob.eps}{Minimum probability value to prevent numerical issues
+(default: 1e-12).}
+
+\item{irlba.maxit}{Maximum iterations for truncated SVD (default: 1500).}
 }
 \value{
-A list of M matrices, each containing knockoff variables.
+If save_gds is TRUE, returns the path to the saved GDS file.
+  Otherwise, returns a list of M matrices, each of the same dimensions as X, 
+  containing knockoff variables.
 }
 \description{
 Generate knockoff variables for genotype data using the Model-X knockoff 
-method with leveraging scores and clustering.
-}
-\examples{
-\dontrun{
-# Load example data
-data(example_genotypes)
-data(example_positions)
-
-# Create knockoffs with different numbers of copies
-knockoffs_3 <- create_knockoffs(example_genotypes, example_positions, M = 3)
-knockoffs_5 <- create_knockoffs(example_genotypes, example_positions, M = 5)
-knockoffs_10 <- create_knockoffs(example_genotypes, example_positions, M = 10)
-}
-
+method with leveraging scores and clustering specifically optimized for
+genetic variant data.
 }
