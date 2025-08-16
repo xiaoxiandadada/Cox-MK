@@ -19,3 +19,4 @@ List containing:
 \description{
 Load original genotypes and knockoff variables from a GDS file.
 }
+\keyword{internal}

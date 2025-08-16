@@ -7,11 +7,11 @@
 create_knockoffs(
   X,
   pos,
+  chr_info = NULL,
   sample_ids = NULL,
   M = 5,
   save_gds = TRUE,
   output_dir = NULL,
-  chr = 1,
   start = NULL,
   end = NULL,
   corr_max = 0.75,
@@ -32,6 +32,9 @@ genotype dosages.}
 \item{pos}{A numeric vector of SNP positions (in base pairs) for linkage
 disequilibrium-aware knockoff generation.}
 
+\item{chr_info}{Optional data frame with chromosome information from BIM file.
+If provided, will extract chromosome number automatically.}
+
 \item{sample_ids}{A character vector of sample IDs (default: NULL, will generate)}
 
 \item{M}{Number of knockoff copies to generate (default: 5). More copies
@@ -40,8 +43,6 @@ can improve statistical power but increase computational cost.}
 \item{save_gds}{Whether to save knockoffs to GDS format (default: TRUE)}
 
 \item{output_dir}{Directory to save GDS files (default: extdata folder)}
-
-\item{chr}{Chromosome number for file naming (default: 1)}
 
 \item{start}{Start position for file naming (default: min(pos))}
 

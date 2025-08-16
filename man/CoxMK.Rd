@@ -8,18 +8,20 @@ Main interface functions for Cox regression analysis with Model-X knockoffs.
 This package provides a complete workflow for survival analysis with 
 variable selection using the knockoff methodology.
 
-The workflow follows three main steps:
+The workflow follows four main steps:
 1. **Generate Knockoffs**: Create knockoff variables using \code{\link{create_knockoffs}}
-2. **SPA Testing**: Perform association testing using \code{\link{fit_cox_spa}}
-3. **Apply Filter**: Select variables using \code{\link{knockoff_filter}}
+2. **Fit Null Model**: Fit null Cox model using \code{\link{fit_null_cox_model}}
+3. **Perform Testing**: Conduct association testing using \code{\link{perform_association_testing}}
+4. **Apply Filter**: Select variables using \code{\link{knockoff_filter}}
 }
 \section{Main Functions}{
 
 \itemize{
   \item \code{\link{cox_knockoff_analysis}} - Complete knockoff analysis workflow
   \item \code{\link{create_knockoffs}} - Step 1: Generate knockoff variables
-  \item \code{\link{fit_cox_spa}} - Step 2: SPA testing and association analysis
-  \item \code{\link{knockoff_filter}} - Step 3: Apply knockoff filter for variable selection
+  \item \code{\link{fit_null_cox_model}} - Step 2: Fit null Cox model for testing
+  \item \code{\link{perform_association_testing}} - Step 3: Perform association testing
+  \item \code{\link{knockoff_filter}} - Step 4: Apply knockoff filter for variable selection
 }
 }
 

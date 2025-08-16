@@ -5,17 +5,19 @@
 #' This package provides a complete workflow for survival analysis with 
 #' variable selection using the knockoff methodology.
 #' 
-#' The workflow follows three main steps:
+#' The workflow follows four main steps:
 #' 1. **Generate Knockoffs**: Create knockoff variables using \code{\link{create_knockoffs}}
-#' 2. **SPA Testing**: Perform association testing using \code{\link{fit_cox_spa}}
-#' 3. **Apply Filter**: Select variables using \code{\link{knockoff_filter}}
+#' 2. **Fit Null Model**: Fit null Cox model using \code{\link{fit_null_cox_model}}
+#' 3. **Perform Testing**: Conduct association testing using \code{\link{perform_association_testing}}
+#' 4. **Apply Filter**: Select variables using \code{\link{knockoff_filter}}
 #' 
 #' @section Main Functions:
 #' \itemize{
 #'   \item \code{\link{cox_knockoff_analysis}} - Complete knockoff analysis workflow
 #'   \item \code{\link{create_knockoffs}} - Step 1: Generate knockoff variables
-#'   \item \code{\link{fit_cox_spa}} - Step 2: SPA testing and association analysis
-#'   \item \code{\link{knockoff_filter}} - Step 3: Apply knockoff filter for variable selection
+#'   \item \code{\link{fit_null_cox_model}} - Step 2: Fit null Cox model for testing
+#'   \item \code{\link{perform_association_testing}} - Step 3: Perform association testing
+#'   \item \code{\link{knockoff_filter}} - Step 4: Apply knockoff filter for variable selection
 #' }
 #' 
 #' @importFrom stats as.formula complete.cases median na.omit pchisq var
@@ -26,86 +28,90 @@ NULL
 
 #' Complete Cox Knockoff Analysis Workflow
 #'
-#' Performs a complete Model-X knockoff analysis following the three-step workflow:
-#' 1. Generate knockoff variables and save to GDS format
-#' 2. Perform SPA testing using GDS data
-#' 3. Apply knockoff filter for variable selection
+#' Performs a complete Model-X knockoff analysis following the four-step workflow:
+#' 1. Generate knockoff variables from PLINK data and save to GDS format
+#' 2. Fit null Cox model using SPACox for efficient large-scale analysis
+#' 3. Perform SPA testing using original and knockoff variables
+#' 4. Apply knockoff filter for variable selection with FDR control
 #'
-#' @param X Genotype matrix (samples x SNPs) - only needed if gds_file is NULL
-#' @param pos SNP positions vector - only needed if gds_file is NULL
+#' @param plink_prefix Path prefix for PLINK files (without extension)
 #' @param time Survival times
 #' @param status Event indicators (1=event, 0=censored)
-#' @param gds_file Path to existing GDS file with knockoffs (optional)
-#' @param sample_ids Sample IDs (optional, will be generated if NULL)
 #' @param covariates Optional covariate matrix/data.frame
+#' @param sample_ids Sample IDs (optional, will be generated from .fam file)
+#' @param null_model Pre-fitted null Cox model or path to RDS file with fitted model (optional)
+#' @param gds_file Path to pre-generated GDS file with knockoff data (optional, if provided, knockoffs will be loaded instead of generated)
 #' @param M Number of knockoff copies to generate (default: 5)
-#' @param fdr Target false discovery rate (default: 0.1)
-#' @param method Statistical method for W statistics ("difference", "mk_median")
-#' @param use_spa Whether to use SPA test when available (default: TRUE)
-#' @param save_gds Whether to save knockoffs to GDS format (default: TRUE)
+#' @param fdr Target false discovery rate (default: 0.05)
+#' @param method Statistical method for W statistics ("median", "difference")
 #' @param output_dir Directory to save GDS files (default: extdata folder)
 #' @return List containing:
 #'   \item{selected_vars}{Indices of selected variables}
 #'   \item{W_stats}{W statistics for all variables}
 #'   \item{threshold}{Knockoff threshold used}
 #'   \item{gds_file}{Path to GDS file used}
+#'   \item{null_model}{Fitted null Cox model}
 #'   \item{test_results}{SPA test results}
 #' @export
 #' @examples
 #' \dontrun{
-#' # Method 1: Standard workflow with PLINK data
+#' # Standard workflow with PLINK data
 #' extdata_path <- system.file('extdata', package = 'CoxMK')
-#' plink_data <- load_plink_data(file.path(extdata_path, 'sample'))
+#' plink_prefix <- file.path(extdata_path, 'sample')
 #' pheno_data <- prepare_phenotype(file.path(extdata_path, 'tte_phenotype.txt'))
 #' covar_data <- load_covariates(file.path(extdata_path, 'covariates.txt'))
 #' 
-#' # Generate knockoffs and save to GDS format
-#' result1 <- cox_knockoff_analysis(
-#'   X = plink_data$genotypes,
-#'   pos = plink_data$positions,
+#' # Option 1: Complete analysis in one step
+#' result <- cox_knockoff_analysis(
+#'   plink_prefix = plink_prefix,
 #'   time = pheno_data$time,
 #'   status = pheno_data$status,
 #'   covariates = covar_data,
 #'   M = 3,
-#'   fdr = 0.1,
-#'   save_gds = TRUE
+#'   fdr = 0.1
 #' )
 #' 
-#' # Method 2: Reuse existing GDS file
-#' gds_file <- result1$gds_file
-#' result2 <- cox_knockoff_analysis(
-#'   gds_file = gds_file,
+#' # Option 2: Step-by-step workflow with GDS file reuse
+#' # Step 2a: Generate knockoffs and save to GDS file
+#' knockoffs <- create_knockoffs(
+#'   X = load_plink_data(plink_prefix)$genotypes,
+#'   pos = load_plink_data(plink_prefix)$positions,
+#'   M = 3
+#' )
+#' gds_file <- knockoffs$gds_file  # GDS file path
+#' 
+#' # Step 2b: Fit null model separately  
+#' null_model <- fit_null_cox_model(
+#'   time = pheno_data$time,
+#'   status = pheno_data$status, 
+#'   covariates = covar_data
+#' )
+#' 
+#' # Step 2c: Load knockoffs from GDS file and run analysis
+#' result <- cox_knockoff_analysis(
+#'   plink_prefix = plink_prefix,
 #'   time = pheno_data$time,
 #'   status = pheno_data$status,
 #'   covariates = covar_data,
-#'   fdr = 0.05  # Different FDR threshold
+#'   null_model = null_model,
+#'   gds_file = gds_file,  # Use pre-generated GDS file
+#'   M = 3,
+#'   fdr = 0.05
 #' )
-#' 
-#' # Method 3: Quick test with example data (no GDS)
-#' data(example_genotypes)
-#' data(example_positions)
-#' data(example_phenotype)
-#' 
-#' result3 <- cox_knockoff_analysis(
-#'   X = example_genotypes,
-#'   pos = example_positions,
-#'   time = example_phenotype$time,
-#'   status = example_phenotype$status,
-#'   save_gds = FALSE  # Skip GDS for quick testing
-#' )
-#' 
 #' # View selected variables
-#' print(result3$selected_vars)
+#' print(result$selected_vars)
+#' print(result$summary)
 #' }
-cox_knockoff_analysis <- function(X = NULL, pos = NULL, time, status, 
-                                 gds_file = NULL, sample_ids = NULL,
-                                 covariates = NULL, M = 5, fdr = 0.1,
-                                 method = "difference", use_spa = TRUE,
-                                 save_gds = TRUE, output_dir = NULL) {
-  
+cox_knockoff_analysis <- function(plink_prefix, time, status,
+                                 covariates = NULL, sample_ids = NULL,
+                                 null_model = NULL, gds_file = NULL, M = 5, fdr = 0.05, method = "median", 
+                                 output_dir = NULL) {
+
   # Validate input parameters
-  if (is.null(gds_file) && (is.null(X) || is.null(pos))) {
-    stop("Either gds_file must be provided, or both X and pos must be provided")
+  if (!file.exists(paste0(plink_prefix, ".bed")) || 
+      !file.exists(paste0(plink_prefix, ".bim")) ||
+      !file.exists(paste0(plink_prefix, ".fam"))) {
+    stop("PLINK files (.bed, .bim, .fam) not found with prefix: ", plink_prefix)
   }
   
   if (length(time) != length(status)) {
@@ -123,98 +129,121 @@ cox_knockoff_analysis <- function(X = NULL, pos = NULL, time, status,
   
   cat("=== Cox Model-X Knockoff Analysis Workflow ===\n")
   
-  # Step 1: Generate or load knockoff variables
-  if (!is.null(gds_file) && file.exists(gds_file)) {
-    cat("\n1. LOADING KNOCKOFFS FROM GDS FILE\n")
-    cat("   Loading knockoffs from:", gds_file, "\n")
-    knockoff_data <- load_knockoff_gds(gds_file)
-    X_original <- knockoff_data$original
-    X_knockoffs <- knockoff_data$knockoffs
-    pos <- knockoff_data$positions
-    sample_ids <- knockoff_data$sample_ids
-    gds_output <- gds_file
-    cat("   - Knockoff data loaded successfully!\n")
-  } else {
-    cat("\n1. GENERATING NEW KNOCKOFF VARIABLES\n")
-    cat("   Creating", M, "knockoff copies...\n")
-    if (is.null(sample_ids)) {
-      sample_ids <- paste0("sample_", seq_len(nrow(X)))
-    }
-    
-    result <- create_knockoffs(X = X, pos = pos, M = M)
-    # Save to GDS format if requested
-    if (save_gds) {
-      # Generate descriptive filename based on genomic region
-      # Try to get chromosome info from existing data (could be enhanced)
-      chr <- "chr1"  # Default to chr1, could be passed as parameter in future
-      
-      start_pos <- min(pos)
-      end_pos <- max(pos)
-      
-      gds_filename <- paste0(chr, "_", start_pos, "_", end_pos, "_knockoff.gds")
-      gds_output <- file.path(output_dir, gds_filename)
-      
-      cat("   Saving knockoffs to GDS format:", gds_filename, "\n")
-      
-      # Create GDS file with knockoff data
-      if (requireNamespace("gdsfmt", quietly = TRUE)) {
-        gdsfile <- gdsfmt::createfn.gds(gds_output)
-        
-        # Add sample information
-        gdsfmt::add.gdsn(gdsfile, "sample.id", sample_ids)
-        gdsfmt::add.gdsn(gdsfile, "positions", pos)
-        
-        # Convert and add original genotype data
-        X_dense <- safe_as_matrix(X, sparse = FALSE)
-        gdsfmt::add.gdsn(gdsfile, "original", X_dense)
-        
-        # Convert and add knockoff data  
-        knockoffs_dense <- array(dim = c(nrow(X), ncol(X), M))
-        for (k in seq_len(M)) {
-          knockoffs_dense[,,k] <- safe_as_matrix(result$knockoffs[[k]], sparse = FALSE)
-        }
-        gdsfmt::add.gdsn(gdsfile, "knockoffs", knockoffs_dense)
-        
-        gdsfmt::closefn.gds(gdsfile)
-        cat("   * GDS file written successfully\n")
-      } else {
-        warning("gdsfmt package not available, knockoffs not saved to GDS format")
-        gds_output <- NULL
-      }
-    } else {
-      gds_output <- NULL
-    }
-    
-    X_original <- X
-    X_knockoffs <- result$knockoffs
-    cat("   - Knockoff generation complete!\n")
+  # Step 1: Generate knockoff variables from PLINK data
+  cat("\n1. GENERATING KNOCKOFF VARIABLES FROM PLINK DATA\n")
+  cat("   Loading PLINK data from:", plink_prefix, "\n")
+  
+  # Load PLINK data
+  plink_data <- load_plink_data(plink_prefix)
+  X_original <- plink_data$genotypes
+  pos <- plink_data$positions
+  if (is.null(sample_ids)) {
+    sample_ids <- plink_data$sample_ids
   }
   
-  # Validate sample consistency
+  # Extract chromosome information
+  bim_file <- paste0(plink_prefix, ".bim")
+  bim_data <- read.table(bim_file, header = FALSE, stringsAsFactors = FALSE)
+  colnames(bim_data) <- c("chr", "snp", "cM", "pos", "A1", "A2")
+  chromosomes <- unique(bim_data$chr)
+  
+  # Step 1a: Check if GDS file is provided, if so load knockoffs from it
+  if (!is.null(gds_file) && file.exists(gds_file)) {
+    cat("   Loading pre-generated knockoffs from GDS file:", gds_file, "\n")
+    knockoff_data <- load_knockoff_gds(gds_file)
+    X_knockoffs <- knockoff_data$knockoffs
+    gds_output <- gds_file
+    
+    # Validate that loaded data matches current PLINK data
+    if (ncol(X_original) != ncol(knockoff_data$original)) {
+      stop("Number of SNPs in GDS file (", ncol(knockoff_data$original), 
+           ") does not match PLINK data (", ncol(X_original), ")")
+    }
+    if (nrow(X_original) != nrow(knockoff_data$original)) {
+      stop("Number of samples in GDS file (", nrow(knockoff_data$original), 
+           ") does not match PLINK data (", nrow(X_original), ")")
+    }
+    
+    M <- length(X_knockoffs)
+    cat("   - Loaded", M, "knockoff matrices from GDS file\n")
+    cat("   - Data dimensions:", nrow(X_original), "samples x", ncol(X_original), "SNPs\n")
+    
+  } else {
+    # Step 1b: Generate new knockoffs
+    cat("   Creating", M, "knockoff copies...\n")
+    cat("   Data dimensions:", nrow(X_original), "samples x", ncol(X_original), "SNPs\n")
+    cat("   Chromosomes found:", paste(chromosomes, collapse = ", "), "\n")
+    
+    # Generate knockoffs
+    knockoff_result <- create_knockoffs(X = X_original, pos = pos, M = M)
+    X_knockoffs <- knockoff_result$knockoffs
+    gds_output <- knockoff_result$gds_file
+  }
+  
+  cat("   - Knockoff generation/loading complete!\n")
+
+  # Validate sample sizes
   n_samples <- length(time)
   if (nrow(X_original) != n_samples) {
     stop("Number of genotype samples (", nrow(X_original), 
          ") does not match phenotype samples (", n_samples, ")")
   }
-  
-  # Step 2: Perform SPA testing
-  cat("\n2. SPA TESTING AND ASSOCIATION ANALYSIS\n")
-  
-  # Test original variables
+
+  # Step 2: Fit Null Model
+  cat("\n2. Fit Null Model\n")
+
+  # Handle null_model parameter (can be object, file path, or NULL)
+  if (is.null(null_model)) {
+    # Fit new model
+    if (requireNamespace("SPACox", quietly = TRUE)) {
+      cat("Fitting null Cox model using SPACox with", ifelse(is.null(covariates), "no", ncol(covariates)), "covariates...\n")
+      null_model <- fit_null_cox_model(time = time, status = status, covariates = covariates)
+      cat("- SPACox null model fitted successfully!\n")
+    } else {
+      cat("SPACox not available, will use traditional Cox regression...\n")
+      cat("- Traditional Cox regression will be used for testing\n")
+    }
+  } else if (is.character(null_model) && length(null_model) == 1) {
+    # Load model from file
+    cat("   Loading pre-fitted null model from:", null_model, "\n")
+    if (!file.exists(null_model)) {
+      stop("Model file not found: ", null_model)
+    }
+
+    model_info <- readRDS(null_model)
+    if (is.list(model_info) && "model" %in% names(model_info)) {
+      # Model saved with metadata (from fit_model.R script)
+      null_model <- model_info$model
+      cat("- Model loaded successfully (Type:", model_info$model_type, ")\n")
+      cat("- Original samples:", model_info$n_samples, ", Events:", model_info$n_events, "\n")
+      if (length(model_info$covariate_names) > 0) {
+        cat("- Covariates:", paste(model_info$covariate_names, collapse = ", "), "\n")
+      }
+    } else {
+      # Model saved directly
+      null_model <- model_info
+      cat("- Model loaded successfully\n")
+    }
+  } else {
+    # Use provided model object
+    cat("Using provided null model object\n")
+  }
+
+  # Step 3: SPA testing and association analysis
+  cat("\n3. SPA TESTING AND ASSOCIATION ANALYSIS\n")
+
   cat("   Testing original variables...\n")
-  orig_results <- fit_cox_spa(X_original, time, status, covariates, use_spa = use_spa)
-  
-  # Test knockoff variables
+  orig_results <- perform_association_testing(X_original, null_model)
+
   cat("   Testing knockoff variables...\n")
   M <- length(X_knockoffs)
   knockoff_results <- vector("list", M)
   
   for (k in seq_len(M)) {
     cat("     Knockoff copy", k, "/", M, "\n")
-    knockoff_results[[k]] <- fit_cox_spa(X_knockoffs[[k]], time, status, covariates, use_spa = use_spa)
+    knockoff_results[[k]] <- perform_association_testing(X_knockoffs[[k]], null_model)
   }
   
-  # Combine test results
   test_results <- list(
     original = orig_results,
     knockoffs = knockoff_results
@@ -222,21 +251,24 @@ cox_knockoff_analysis <- function(X = NULL, pos = NULL, time, status,
   
   cat("   - Association testing complete!\n")
   
-  # Step 3: Apply knockoff filter
-  cat("\n3. APPLYING KNOCKOFF FILTER\n")
+  # Step 4: Apply knockoff filter
+  cat("\n4. APPLYING KNOCKOFF FILTER\n")
   cat("   Computing W statistics using method:", method, "\n")
   
-  # Calculate W statistics
+  # Extract test statistics
   t_orig <- orig_results$test_stats
-  t_knock_list <- lapply(knockoff_results, function(x) x$test_stats)
   
-  W_stats <- calculate_w_statistics(t_orig, t_knock_list, method = method)
+  # For multiple knockoffs, combine test statistics (use median as example)
+  t_knock_matrix <- do.call(cbind, lapply(knockoff_results, function(x) x$test_stats))
+  t_knock_combined <- apply(t_knock_matrix, 1, median)
+  
+  # Calculate W statistics using the same method as calculate_w_statistics
+  W_stats <- calculate_w_statistics(t_orig, t_knock_combined, method = method)
   
   cat("   Applying knockoff filter with FDR =", fdr, "\n")
   selected_vars <- knockoff_filter(W_stats, fdr = fdr)
   threshold <- attr(selected_vars, "threshold")
-  
-  # Create filter results structure  
+
   filter_results <- list(
     selected_vars = selected_vars,
     W_stats = W_stats,
@@ -245,23 +277,24 @@ cox_knockoff_analysis <- function(X = NULL, pos = NULL, time, status,
   
   cat("   - Variable selection complete!\n")
   
-  # Summary
+  # Print analysis summary
   cat("\n=== ANALYSIS SUMMARY ===\n")
   cat("   Total variables tested:", length(filter_results$W_stats), "\n")
   cat("   Variables selected:", length(filter_results$selected_vars), "\n")
   cat("   Selection proportion:", round(length(filter_results$selected_vars) / 
                                         length(filter_results$W_stats) * 100, 2), "%\n")
   cat("   Threshold used:", round(filter_results$threshold, 4), "\n")
-  if (save_gds && !is.null(gds_output)) {
+  if (!is.null(gds_output)) {
     cat("   Knockoff data saved to:", gds_output, "\n")
   }
   
-  # Combine results
+  # Return results
   results <- list(
     selected_vars = filter_results$selected_vars,
     W_stats = filter_results$W_stats,
     threshold = filter_results$threshold,
     gds_file = gds_output,
+    null_model = null_model,
     test_results = test_results,
     method = method,
     fdr = fdr,
@@ -273,33 +306,4 @@ cox_knockoff_analysis <- function(X = NULL, pos = NULL, time, status,
   )
   
   return(results)
-}
-
-#' Fit Cox Regression Model
-#'
-#' Fits a Cox proportional hazards model with optional covariates.
-#'
-#' @param X Predictor matrix
-#' @param time Survival times
-#' @param status Event indicators
-#' @param covariates Optional covariate matrix/data.frame
-#' @return Fitted Cox model object
-#' @export
-fit_cox_model <- function(X, time, status, covariates = NULL) {
-  
-  surv_obj <- Surv(time, status)
-  
-  if (!is.null(covariates)) {
-    data_df <- data.frame(X, covariates, surv_obj)
-    var_names <- c(paste0("X", seq_len(ncol(X))), names(covariates))
-    names(data_df)[seq_len(ncol(X))] <- var_names[seq_len(ncol(X))]
-    formula_str <- paste("surv_obj ~", paste(var_names, collapse = " + "))
-  } else {
-    data_df <- data.frame(X, surv_obj)
-    var_names <- paste0("X", seq_len(ncol(X)))
-    names(data_df)[seq_len(ncol(X))] <- var_names
-    formula_str <- paste("surv_obj ~", paste(var_names, collapse = " + "))
-  }
-  
-  coxph(as.formula(formula_str), data = data_df)
 }

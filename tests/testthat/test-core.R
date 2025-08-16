@@ -6,28 +6,41 @@ test_that("Package loads correctly", {
 })
 
 test_that("Example data loads correctly", {
-  data(example_genotypes)
-  data(example_positions)
-  data(example_phenotype)
-  data(example_covariates)
+  extdata_path <- system.file("extdata", package = "CoxMK")
+  expect_true(dir.exists(extdata_path))
   
-  expect_true(is.matrix(example_genotypes))
-  expect_true(is.numeric(example_positions))
-  expect_true(is.data.frame(example_phenotype))
-  expect_true(is.data.frame(example_covariates))
+  # Check PLINK files exist
+  expect_true(file.exists(file.path(extdata_path, "sample.bed")))
+  expect_true(file.exists(file.path(extdata_path, "sample.bim")))  
+  expect_true(file.exists(file.path(extdata_path, "sample.fam")))
+  
+  # Check phenotype and covariate files exist
+  expect_true(file.exists(file.path(extdata_path, "tte_phenotype.txt")))
+  expect_true(file.exists(file.path(extdata_path, "covariates.txt")))
 })
 
 test_that("Core functions work", {
-  data(example_genotypes)
-  data(example_positions)
+  # Load example data from extdata
+  extdata_path <- system.file("extdata", package = "CoxMK")
   
-  # Test knockoff creation (simple test)
+  # Load PLINK data
+  plink_data <- load_plink_data(file.path(extdata_path, "sample"))
+  
+  # Test knockoff creation with small subset
+  n_samples <- min(10, nrow(plink_data$genotypes))
+  n_snps <- min(5, ncol(plink_data$genotypes))
+  
+  subset_X <- plink_data$genotypes[seq_len(n_samples), seq_len(n_snps)]
+  subset_pos <- plink_data$positions[seq_len(n_snps)]
+  
   knockoffs <- create_knockoffs(
-    X = example_genotypes[1:10, 1:5],  # Small subset for testing
-    pos = example_positions[1:5],
-    M = 2
+    X = subset_X,
+    pos = subset_pos,
+    M = 2,
+    save_gds = FALSE  # Don't save GDS for testing
   )
   
-  expect_equal(length(knockoffs), 2)
-  expect_equal(dim(knockoffs[[1]]), c(10, 5))
+  expect_true("knockoffs" %in% names(knockoffs))
+  expect_equal(length(knockoffs$knockoffs), 2)
+  expect_equal(dim(knockoffs$knockoffs[[1]]), dim(subset_X))
 })

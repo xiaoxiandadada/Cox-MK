@@ -5,45 +5,39 @@
 \title{Complete Cox Knockoff Analysis Workflow}
 \usage{
 cox_knockoff_analysis(
-  X = NULL,
-  pos = NULL,
+  plink_prefix,
   time,
   status,
-  gds_file = NULL,
-  sample_ids = NULL,
   covariates = NULL,
+  sample_ids = NULL,
+  null_model = NULL,
+  gds_file = NULL,
   M = 5,
-  fdr = 0.1,
-  method = "difference",
-  use_spa = TRUE,
-  save_gds = TRUE,
+  fdr = 0.05,
+  method = "median",
   output_dir = NULL
 )
 }
 \arguments{
-\item{X}{Genotype matrix (samples x SNPs) - only needed if gds_file is NULL}
-
-\item{pos}{SNP positions vector - only needed if gds_file is NULL}
+\item{plink_prefix}{Path prefix for PLINK files (without extension)}
 
 \item{time}{Survival times}
 
 \item{status}{Event indicators (1=event, 0=censored)}
 
-\item{gds_file}{Path to existing GDS file with knockoffs (optional)}
-
-\item{sample_ids}{Sample IDs (optional, will be generated if NULL)}
-
 \item{covariates}{Optional covariate matrix/data.frame}
+
+\item{sample_ids}{Sample IDs (optional, will be generated from .fam file)}
+
+\item{null_model}{Pre-fitted null Cox model or path to RDS file with fitted model (optional)}
+
+\item{gds_file}{Path to pre-generated GDS file with knockoff data (optional, if provided, knockoffs will be loaded instead of generated)}
 
 \item{M}{Number of knockoff copies to generate (default: 5)}
 
-\item{fdr}{Target false discovery rate (default: 0.1)}
+\item{fdr}{Target false discovery rate (default: 0.05)}
 
-\item{method}{Statistical method for W statistics ("difference", "mk_median")}
-
-\item{use_spa}{Whether to use SPA test when available (default: TRUE)}
-
-\item{save_gds}{Whether to save knockoffs to GDS format (default: TRUE)}
+\item{method}{Statistical method for W statistics ("median", "difference")}
 
 \item{output_dir}{Directory to save GDS files (default: extdata folder)}
 }
@@ -53,58 +47,63 @@ List containing:
   \item{W_stats}{W statistics for all variables}
   \item{threshold}{Knockoff threshold used}
   \item{gds_file}{Path to GDS file used}
+  \item{null_model}{Fitted null Cox model}
   \item{test_results}{SPA test results}
 }
 \description{
-Performs a complete Model-X knockoff analysis following the three-step workflow:
-1. Generate knockoff variables and save to GDS format
-2. Perform SPA testing using GDS data
-3. Apply knockoff filter for variable selection
+Performs a complete Model-X knockoff analysis following the four-step workflow:
+1. Generate knockoff variables from PLINK data and save to GDS format
+2. Fit null Cox model using SPACox for efficient large-scale analysis
+3. Perform SPA testing using original and knockoff variables
+4. Apply knockoff filter for variable selection with FDR control
 }
 \examples{
 \dontrun{
-# Method 1: Standard workflow with PLINK data
+# Standard workflow with PLINK data
 extdata_path <- system.file('extdata', package = 'CoxMK')
-plink_data <- load_plink_data(file.path(extdata_path, 'sample'))
+plink_prefix <- file.path(extdata_path, 'sample')
 pheno_data <- prepare_phenotype(file.path(extdata_path, 'tte_phenotype.txt'))
 covar_data <- load_covariates(file.path(extdata_path, 'covariates.txt'))
 
-# Generate knockoffs and save to GDS format
-result1 <- cox_knockoff_analysis(
-  X = plink_data$genotypes,
-  pos = plink_data$positions,
+# Option 1: Complete analysis in one step
+result <- cox_knockoff_analysis(
+  plink_prefix = plink_prefix,
   time = pheno_data$time,
   status = pheno_data$status,
   covariates = covar_data,
   M = 3,
-  fdr = 0.1,
-  save_gds = TRUE
+  fdr = 0.1
 )
 
-# Method 2: Reuse existing GDS file
-gds_file <- result1$gds_file
-result2 <- cox_knockoff_analysis(
-  gds_file = gds_file,
+# Option 2: Step-by-step workflow with GDS file reuse
+# Step 2a: Generate knockoffs and save to GDS file
+knockoffs <- create_knockoffs(
+  X = load_plink_data(plink_prefix)$genotypes,
+  pos = load_plink_data(plink_prefix)$positions,
+  M = 3
+)
+gds_file <- knockoffs$gds_file  # GDS file path
+
+# Step 2b: Fit null model separately  
+null_model <- fit_null_cox_model(
+  time = pheno_data$time,
+  status = pheno_data$status, 
+  covariates = covar_data
+)
+
+# Step 2c: Load knockoffs from GDS file and run analysis
+result <- cox_knockoff_analysis(
+  plink_prefix = plink_prefix,
   time = pheno_data$time,
   status = pheno_data$status,
   covariates = covar_data,
-  fdr = 0.05  # Different FDR threshold
+  null_model = null_model,
+  gds_file = gds_file,  # Use pre-generated GDS file
+  M = 3,
+  fdr = 0.05
 )
-
-# Method 3: Quick test with example data (no GDS)
-data(example_genotypes)
-data(example_positions)
-data(example_phenotype)
-
-result3 <- cox_knockoff_analysis(
-  X = example_genotypes,
-  pos = example_positions,
-  time = example_phenotype$time,
-  status = example_phenotype$status,
-  save_gds = FALSE  # Skip GDS for quick testing
-)
-
 # View selected variables
-print(result3$selected_vars)
+print(result$selected_vars)
+print(result$summary)
 }
 }

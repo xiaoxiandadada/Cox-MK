@@ -4,20 +4,20 @@
 \alias{calculate_w_statistics}
 \title{Calculate W Statistics for Knockoff Analysis}
 \usage{
-calculate_w_statistics(t_orig, t_knock, method = "difference")
+calculate_w_statistics(Z_orig, Z_ko, method = "median")
 }
 \arguments{
+\item{method}{Method for computing W statistics:
+\itemize{
+  \item "difference": W_j = T_j - max(T_\{j,k\}) (default)
+  \item "median": Uses Model-X knockoff median-based statistics
+  \item "ratio": W_j = T_j / max(T_\{j,k\})
+}}
+
 \item{t_orig}{Vector of test statistics for original variables}
 
 \item{t_knock}{Vector or list of test statistics for knockoff variables.
 If a list, should contain M vectors of the same length as t_orig.}
-
-\item{method}{Method for computing W statistics:
-\itemize{
-  \item "difference": W_j = T_j - max(T_{j,k}) (default)
-  \item "mk_median": Uses Model-X knockoff median-based statistics
-  \item "ratio": W_j = T_j / max(T_{j,k})
-}}
 }
 \value{
 Vector of W statistics for variable selection
@@ -36,7 +36,7 @@ t_knock <- list(
   c(1.9, 3.8, 4.1, 2.2, 3.1)
 )
 
+w_median <- calculate_w_statistics(t_orig, t_knock, method = "median")
 w_diff <- calculate_w_statistics(t_orig, t_knock, method = "difference")
-w_mk <- calculate_w_statistics(t_orig, t_knock, method = "mk_median")
 }
 }

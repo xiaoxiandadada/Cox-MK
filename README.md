@@ -1,168 +1,99 @@
-# Cox-MK
+<div align="center">
+  <img src="archive/coxmk_capsule_strong.svg" alt="CoxMK" width="400"/>
+</div>
 
-Cox Regression with Model-X Knockoffs for Survival Analysis
+[![R](https://img.shields.io/badge/R-%3E%3D3.5.0-blue.svg)](https://www.r-project.org/)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 ## Overview
 
-`CoxMK` implements Cox regression analysis with Model-X knockoffs for variable selection in survival analysis. The package provides functions for:
+CoxMK implements Cox regression with Multiple knockoffs for survival analysis, providing finite-sample FDR control in high-dimensional genetic studies. 
 
-- Generating knockoff variables for genetic data (user-configurable number of knockoffs)
-- Fitting Cox proportional hazards models (with optional SPACox support)
-- Performing association analysis with FDR control
-- Variable selection using the knockoff filter
-
-## Key Features
-
-### SPACox Integration
-For large-scale genetic studies, this package supports [SPACox](https://github.com/WenjianBI/SPACox) for efficient null model fitting. SPACox is particularly recommended for genome-wide association studies with survival outcomes.
-
-### Flexible Knockoff Generation
-Users can specify the number of knockoff copies (M) based on their computational resources and power requirements:
+**Features:**
+- 🧬 PLINK format support for large-scale GWAS
+- 📊 Finite-sample FDR control via Mutiple knockoffs  
+- ⚡ Efficient null model fitting using **SPACox** for large datasets
+- 🖥️ Command line interface for easy use
 
 ## Installation
 
 ```r
-# Install development version from GitHub
+# Install from GitHub
 devtools::install_github("xiaoxiandadada/Cox-MK")
 
-# Optional: Install SPACox for large-scale studies
+# Install dependencies
+install.packages(c("Matrix", "survival", "irlba", "optparse"))
+
+# Install SPACox for efficient null model fitting (recommended)
 devtools::install_github("WenjianBI/SPACox")
 ```
 
-## Quick Example
+## Quick Start
+
+### R Interface
 
 ```r
 library(CoxMK)
 
 # Load example data
-data(example_genotypes)
-data(example_positions)
-data(example_phenotype)
-data(example_covariates)
+extdata_path <- system.file("extdata", package = "CoxMK")
 
-# Create knockoff variables (user can choose M)
-knockoffs_5 <- create_knockoffs(
-  X = example_genotypes,
-  pos = example_positions,
-  M = 5  # Default: 5 knockoffs, users can specify 3, 10, etc.
+# Run analysis
+result <- cox_knockoff_analysis(
+  plink_prefix = file.path(extdata_path, "sample"),
+  phenotype_file = file.path(extdata_path, "tte_phenotype.txt"),
+  covariate_file = file.path(extdata_path, "covariates.txt"),
+  M = 5,           # Number of knockoffs
+  fdr = 0.05       # False discovery rate
 )
 
-# Alternative: fewer knockoffs for faster computation
-knockoffs_3 <- create_knockoffs(
-  X = example_genotypes,
-  pos = example_positions,
-  M = 3  # Faster but potentially less powerful
-)
-
-# Prepare phenotype data
-pheno_data <- merge(example_phenotype, example_covariates, by = c("FID", "IID"))
-covariates <- pheno_data[, c("age", "sex", "bmi")]
-
-# Fit null model with standard coxph
-null_model <- fit_null_model(
-  time = pheno_data$time,
-  status = pheno_data$status,
-  covariates = covariates
-)
-
-# For large-scale studies, use SPACox (if installed)
-null_model_spa <- fit_null_model(
-  time = pheno_data$time,
-  status = pheno_data$status,
-  covariates = covariates,
-  use_spacox = TRUE  # Requires SPACox package
-)
-
-# Perform knockoff screening (for demonstration, using simulated results)
-set.seed(123)
-p <- ncol(example_genotypes)
-original_pvals <- runif(p, 0.001, 1)
-original_coefs <- rnorm(p, 0, 0.5)
-knockoff_pvals <- lapply(1:5, function(k) runif(p, 0.001, 1))  # 5 knockoffs
-knockoff_coefs <- lapply(1:5, function(k) rnorm(p, 0, 0.5))
-
-# Calculate W statistics and apply filter
-w_stats <- calculate_w_statistics(original_pvals, knockoff_pvals, 
-                                 original_coefs, knockoff_coefs)
-selected <- knockoff_filter(w_stats, fdr = 0.1)
-
-print(paste("Selected", length(selected$selected), "variables"))
+print(result$summary)
 ```
 
-## Features
+### Command Line Interface
 
-### Data Loading
-- `load_plink_data()`: Load PLINK binary format data
-- `prepare_phenotype()`: Prepare time-to-event phenotype data
+```bash
+# Show help
+Rscript inst/scripts/run_coxmk.R --help
 
-### Knockoff Generation
-- `create_knockoffs()`: Generate Model-X knockoff variables with:
-  - Leveraging scores for importance sampling
-  - LD-based clustering
-  - Regression-based knockoff construction
+# Run analysis
+Rscript inst/scripts/run_coxmk.R \
+  --plink_prefix data/sample \
+  --phenotype phenotype.txt \
+  --covariates covariates.txt \
+  --M 5 --fdr 0.05 --output_dir results/
+```
 
-### Cox Regression Analysis
-- `fit_null_model()`: Fit null Cox model with covariates
-- `cox_knockoff_screen()`: Perform association analysis
-- `calculate_w_statistics()`: Calculate W statistics for selection
-- `knockoff_filter()`: Apply knockoff filter with FDR control
+## Input Data
 
-## Input Data Format
+**Required files:**
+- PLINK binary files (`.bed`, `.bim`, `.fam`)
+- Phenotype file: `IID`, `time`, `status` columns
+- Covariates file: `IID` + covariate columns
 
-### Genotype Data
-- PLINK binary format (.bed/.bim/.fam) or sparse matrices
-- Samples in rows, SNPs in columns
-- 0/1/2 encoding for genotype counts
+**Example phenotype file:**
+```
+IID      time    status
+sample1  10.5    1
+sample2  8.2     0
+```
 
-### Phenotype Data
-Text file with columns:
-- `FID`: Family ID
-- `IID`: Individual ID  
-- `time`: Survival time
-- `status`: Event indicator (0/1)
+## Output
 
-### Covariates
-Text file with columns:
-- `FID`, `IID`: Sample identifiers
-- Additional covariate columns (age, sex, etc.)
-
-## Method Overview
-
-The knockoff method provides finite-sample FDR control by:
-
-1. **Generating knockoffs**: Create synthetic variables that mimic the correlation structure of original variables
-2. **Variable importance**: Test both original and knockoff variables
-3. **W statistics**: Calculate signed maximum or difference statistics
-4. **Selection**: Apply data-adaptive threshold to control FDR
+```r
+result$selected_vars   # Selected SNP indices
+result$W_stats        # W statistics for all SNPs
+result$summary        # Analysis summary
+```
 
 ## Citation
 
-If you use this package, please cite:
-
 ```
 CoxMK: Cox Regression with Model-X Knockoffs for Survival Analysis
-Yang Chen (yangchen5&#64;stu.scu.edu.cn)
-R package version 0.1.0 (2025)
+Yang Chen (yangchen5@stu.scu.edu.cn)
 https://github.com/xiaoxiandadada/Cox-MK
 ```
 
-Or in BibTeX format:
-
-```bibtex
-@software{CoxMK2025,
-  title = {CoxMK: Cox Regression with Model-X Knockoffs for Survival Analysis},
-  author = {Yang Chen},
-  year = {2025},
-  url = {https://github.com/xiaoxiandadada/Cox-MK},
-  note = {R package version 0.1.0}
-}
-```
-
-## Contact
-
-For questions or issues, please contact Yang Chen at yangchen5&#64;stu.scu.edu.cn
-
 ## License
 
-GPL-3
-
+This software is licensed under GPLv3.

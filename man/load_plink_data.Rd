@@ -9,15 +9,10 @@ load_plink_data(bed_path, verbose = TRUE)
 \arguments{
 \item{bed_path}{Path to PLINK .bed file (without extension)}
 
-\item{verbose}{Whether to print progress messages (default: TRUE)}
+\item{verbose}{Whether to print loading progress (default: TRUE)}
 }
 \value{
-List containing:
-  \item{genotypes}{Sparse genotype matrix (samples × SNPs)}
-  \item{fam}{Sample information from .fam file}
-  \item{bim}{SNP information from .bim file}
-  \item{positions}{SNP positions}
-  \item{sample_ids}{Sample IDs}
+List containing genotype matrix and metadata
 }
 \description{
 Loads genetic data from PLINK binary format (.bed/.bim/.fam files) and
@@ -30,3 +25,4 @@ extdata_path <- system.file('extdata', package = 'CoxMK')
 plink_data <- load_plink_data(file.path(extdata_path, 'sample'))
 }
 }
+\keyword{internal}

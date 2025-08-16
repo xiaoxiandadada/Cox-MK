@@ -1,4 +1,4 @@
-#' @title Data Processing Utilities  
+#' Load PLINK Data for Analysisata Processing Utilities  
 #' @name data-processing
 #' @description
 #' Utility functions for data loading, processing, and validation specifically
@@ -14,20 +14,16 @@ NULL
 #' converts it to a sparse matrix format suitable for knockoff analysis.
 #'
 #' @param bed_path Path to PLINK .bed file (without extension)
-#' @param verbose Whether to print progress messages (default: TRUE)
-#' @return List containing:
-#'   \item{genotypes}{Sparse genotype matrix (samples × SNPs)}
-#'   \item{fam}{Sample information from .fam file}
-#'   \item{bim}{SNP information from .bim file}
-#'   \item{positions}{SNP positions}
-#'   \item{sample_ids}{Sample IDs}
-#' @export
+#' @param verbose Whether to print loading progress (default: TRUE)
+#' @return List containing genotype matrix and metadata
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' # Load PLINK data
 #' extdata_path <- system.file('extdata', package = 'CoxMK')
 #' plink_data <- load_plink_data(file.path(extdata_path, 'sample'))
 #' }
+#' @export
 load_plink_data <- function(bed_path, verbose = TRUE) {
   
   if (verbose) cat("Loading PLINK data from:", bed_path, "\n")
@@ -69,6 +65,7 @@ load_plink_data <- function(bed_path, verbose = TRUE) {
     genotypes = genotypes,
     fam = fam,
     bim = bim,
+    chr_info = bim,  # Add chr_info for chromosome extraction
     positions = bim$BP,
     sample_ids = fam$IID
   )
@@ -86,13 +83,14 @@ load_plink_data <- function(bed_path, verbose = TRUE) {
 #' @param sep Field separator (default: tab-delimited)
 #' @param header Whether file has header (default: TRUE)
 #' @return Data frame with columns: time, status, and optional sample IDs
-#' @export
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' # Load phenotype data
 #' extdata_path <- system.file('extdata', package = 'CoxMK')
 #' pheno_data <- prepare_phenotype(file.path(extdata_path, 'tte_phenotype.txt'))
 #' }
+#' @export
 prepare_phenotype <- function(phenotype_file, time_col = "time", status_col = "status",
                             status_file = NULL, sep = "\t", header = TRUE) {
   
@@ -197,7 +195,7 @@ load_covariates <- function(covariate_file, exclude_cols = c("FID", "IID")) {
   # Load covariate data
   covar_data <- read.table(covariate_file, header = TRUE, stringsAsFactors = FALSE,
                           check.names = FALSE)
-  
+
   cat("  Loaded", nrow(covar_data), "samples with", ncol(covar_data), "variables\n")
   
   # Remove excluded columns
@@ -208,7 +206,7 @@ load_covariates <- function(covariate_file, exclude_cols = c("FID", "IID")) {
     }
     covar_data <- covar_data[, keep_cols, drop = FALSE]
   }
-  
+
   # Convert character variables to factors if appropriate
   for (col in names(covar_data)) {
     if (is.character(covar_data[[col]])) {
@@ -220,7 +218,7 @@ load_covariates <- function(covariate_file, exclude_cols = c("FID", "IID")) {
       }
     }
   }
-  
+
   # Check for missing values
   missing_counts <- sapply(covar_data, function(x) sum(is.na(x)))
   if (any(missing_counts > 0)) {
@@ -245,7 +243,7 @@ load_covariates <- function(covariate_file, exclude_cols = c("FID", "IID")) {
 #'   \item{knockoffs}{List of knockoff matrices}
 #'   \item{sample_ids}{Sample IDs}
 #'   \item{positions}{SNP positions}
-#' @export
+#' @keywords internal
 load_knockoff_gds <- function(gds_file) {
   
   if (!file.exists(gds_file)) {
@@ -262,33 +260,25 @@ load_knockoff_gds <- function(gds_file) {
   g <- gdsfmt::openfn.gds(gds_file)
   
   tryCatch({
-    # Read sample IDs
     sample_ids <- gdsfmt::read.gdsn(gdsfmt::index.gdsn(g, "sample.id"))
-    
-    # Read SNP positions
     positions <- gdsfmt::read.gdsn(gdsfmt::index.gdsn(g, "snp.pos"))
-    
-    # Read original genotype data
     original <- gdsfmt::read.gdsn(gdsfmt::index.gdsn(g, "original"))
-    
-    # Read knockoff data - they are saved as separate knockoff1, knockoff2, etc.
-    # First, determine how many knockoffs exist
     all_nodes <- gdsfmt::ls.gdsn(g)
     knockoff_nodes <- grep("^knockoff[0-9]+$", all_nodes, value = TRUE)
     M <- length(knockoff_nodes)
-    
+
     # Read each knockoff matrix
     knockoffs <- vector("list", M)
     for (k in seq_len(M)) {
       node_name <- paste0("knockoff", k)
       knockoffs[[k]] <- gdsfmt::read.gdsn(gdsfmt::index.gdsn(g, node_name))
     }
-    
+
     cat("  Loaded data:\n")
     cat("    Samples:", length(sample_ids), "\n")
     cat("    SNPs:", length(positions), "\n") 
     cat("    Knockoff copies:", length(knockoffs), "\n")
-    
+
     return(list(
       original = original,
       knockoffs = knockoffs,
@@ -296,7 +286,7 @@ load_knockoff_gds <- function(gds_file) {
       positions = positions,
       gds_file = gds_file
     ))
-    
+
   }, finally = {
     gdsfmt::closefn.gds(g)
   })

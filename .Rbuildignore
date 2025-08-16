@@ -2,4 +2,9 @@
 ^\.Rproj\.user$
 ^\.github$
 ^plots$
+^docs$
 ^README\.Rmd$
+^.*\.Rcheck$
+^\.DS_Store$
+^doc$
+^Meta$

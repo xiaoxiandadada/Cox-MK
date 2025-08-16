@@ -1,76 +1,66 @@
-#' @title Utility Functions
-#' @name utilities
-#' @description
-#' Helper functions for matrix operations, correlation calculations, and
-#' other computational utilities used throughout the CoxMK package.
-NULL
-
-#' Efficient Sparse Correlation Matrix Computation
+#' Sparse Matrix Correlation Computation
 #'
-#' Computes correlation and covariance matrices for sparse matrices efficiently,
-#' particularly useful for large genetic datasets.
+#' Efficiently computes correlation and covariance matrices for sparse matrices
+#' using optimized sparse matrix operations. This is an internal utility function.
 #'
-#' @param x A numeric matrix (can be sparse)
+#' @param x A sparse matrix (can be dgCMatrix or similar)
 #' @return List containing:
 #'   \item{cov}{The covariance matrix}
 #'   \item{cor}{The correlation matrix}
-#' @export
-#' @examples
-#' \dontrun{
-#' # Create example sparse matrix
-#' X <- Matrix::Matrix(matrix(rnorm(1000), 100, 10), sparse = TRUE)
-#' 
-#' # Compute correlation
-#' result <- sparse_cor(x)
-#' cor_matrix <- result$cor
-#' cov_matrix <- result$cov
-#' }
+#' @keywords internal
 sparse_cor <- function(x) {
-  n <- nrow(x)
-  cMeans <- colMeans(x)
-  covmat <- (as.matrix(crossprod(x)) - n * tcrossprod(cMeans)) / (n - 1)
-  sdvec <- sqrt(diag(covmat))
-  cormat <- covmat / tcrossprod(sdvec)
-  list(cov = covmat, cor = cormat)
+  # Ensure x is a matrix-like object
+  if (!is.matrix(x) && !inherits(x, "Matrix")) {
+    x <- as.matrix(x)
+  }
+  
+  # Compute covariance and correlation matrices
+  cov_matrix <- var(x, na.rm = TRUE)
+  cor_matrix <- stats::cov2cor(cov_matrix)
+  
+  return(list(
+    cov = cov_matrix,
+    cor = cor_matrix
+  ))
 }
 
-#' Sparse Cross-Covariance Matrix Computation
+#' Sparse Cross-Covariance Computation
 #'
-#' Computes cross-covariance matrix between two sparse matrices efficiently.
+#' Computes cross-covariance between two sparse matrices efficiently.
+#' This is an internal utility function for knockoff generation.
 #'
 #' @param x A numeric matrix (can be sparse)
 #' @param y A numeric matrix (can be sparse)
 #' @return List containing:
 #'   \item{cov}{The cross-covariance matrix}
-#' @export
-#' @examples
-#' \dontrun{
-#' X <- Matrix::Matrix(matrix(rnorm(500), 50, 10), sparse = TRUE)
-#' Y <- Matrix::Matrix(matrix(rnorm(500), 50, 10), sparse = TRUE)
-#' 
-#' cross_cov <- sparse_cov_cross(X, Y)
-#' }
+#' @keywords internal
 sparse_cov_cross <- function(x, y) {
+  # Compute cross-covariance matrix
   n <- nrow(x)
-  cMeans.x <- colMeans(x)
-  cMeans.y <- colMeans(y)
-  covmat <- (as.matrix(crossprod(x, y)) - n * tcrossprod(cMeans.x, cMeans.y)) / (n - 1)
-  list(cov = covmat)
+  cMeans_x <- colMeans(x)
+  cMeans_y <- colMeans(y)
+  
+  # Center the matrices
+  x_centered <- sweep(x, 2, cMeans_x, "-")
+  y_centered <- sweep(y, 2, cMeans_y, "-")
+  
+  # Compute cross-covariance
+  cross_cov <- crossprod(x_centered, y_centered) / (n - 1)
+  
+  return(list(cov = cross_cov))
 }
 
-#' Find N-th Largest Value in Vector
+#' Find N-th Largest Value
 #'
-#' Efficiently finds the n-th largest value in a vector using partial sorting.
+#' Efficiently finds the n-th largest value in a numeric vector.
+#' This is primarily used internally for knockoff statistics computation.
 #'
 #' @param x A numeric vector
 #' @param n The position (1 = largest, 2 = second largest, etc.)
 #' @return The n-th largest value in the vector
-#' @export
-#' @examples
-#' values <- c(1.5, 3.2, 2.8, 4.1, 2.3)
-#' max_nth(values, 1)  # 4.1 (largest)
-#' max_nth(values, 2)  # 3.2 (second largest)
+#' @keywords internal
 max_nth <- function(x, n) {
+  #
   if (n > length(x)) {
     stop("n cannot be larger than length of x")
   }
@@ -80,50 +70,59 @@ max_nth <- function(x, n) {
 #' Safe Matrix Conversion
 #'
 #' Safely converts various matrix-like objects to standard matrix format,
-#' handling sparse matrices and potential memory issues.
+#' handling sparse matrices and potential memory issues. This is an internal
+#' utility function.
 #'
 #' @param x Matrix-like object (matrix, Matrix, data.frame)
 #' @param sparse Whether to maintain sparsity if possible (default: FALSE)
 #' @return Matrix object
-#' @export
+#' @keywords internal
 safe_as_matrix <- function(x, sparse = FALSE) {
   
+  #
   if (inherits(x, "Matrix")) {
     if (sparse) {
       return(x)
     } else {
       return(as.matrix(x))
     }
-  } else if (is.data.frame(x)) {
-    # Convert data.frame to matrix
-    x_mat <- as.matrix(x)
-    if (sparse && requireNamespace("Matrix", quietly = TRUE)) {
-      return(Matrix::Matrix(x_mat, sparse = TRUE))
-    } else {
-      return(x_mat)
-    }
   } else if (is.matrix(x)) {
-    if (sparse && requireNamespace("Matrix", quietly = TRUE)) {
+    if (sparse) {
       return(Matrix::Matrix(x, sparse = TRUE))
     } else {
       return(x)
     }
+  } else if (is.data.frame(x)) {
+    x_matrix <- as.matrix(x)
+    if (sparse) {
+      return(Matrix::Matrix(x_matrix, sparse = TRUE))
+    } else {
+      return(x_matrix)
+    }
   } else {
-    stop("x must be a matrix, Matrix, or data.frame")
+    # Try to convert to matrix
+    x_matrix <- as.matrix(x)
+    if (sparse) {
+      return(Matrix::Matrix(x_matrix, sparse = TRUE))
+    } else {
+      return(x_matrix)
+    }
   }
 }
 
 #' Validate Matrix Dimensions
 #'
-#' Checks if two matrices have compatible dimensions for specific operations.
+#' Validates that two matrices have compatible dimensions for a given operation.
+#' This is an internal utility function for dimension checking.
 #'
 #' @param x First matrix
-#' @param y Second matrix
+#' @param y Second matrix  
 #' @param operation Type of operation ("multiply", "add", "match_rows", "match_cols")
-#' @return Logical indicating if dimensions are compatible
-#' @export
+#' @return Logical indicating whether dimensions are compatible
+#' @keywords internal
 validate_dimensions <- function(x, y, operation = "multiply") {
   
+  #
   dim_x <- dim(x)
   dim_y <- dim(y)
   
@@ -144,32 +143,30 @@ validate_dimensions <- function(x, y, operation = "multiply") {
 #'
 #' Computes comprehensive summary statistics for a matrix, handling
 #' missing values and providing both numerical and distributional summaries.
+#' This is primarily used for debugging and internal diagnostics.
 #'
 #' @param x Numeric matrix
 #' @param na.rm Whether to remove NA values (default: TRUE)
-#' @return List with summary statistics
-#' @export
+#' @return List containing various summary statistics
+#' @keywords internal
 matrix_summary <- function(x, na.rm = TRUE) {
   
-  if (!is.numeric(x)) {
-    stop("x must be numeric")
-  }
-  
-  # Basic dimensions
+  #
   dims <- dim(x)
   n_elements <- prod(dims)
   
-  # Missing values
-  n_missing <- sum(is.na(x))
-  prop_missing <- n_missing / n_elements
-  
-  # Numerical summaries
-  if (na.rm && n_missing > 0) {
+  # Handle missing values
+  if (na.rm) {
     x_clean <- x[!is.na(x)]
+    n_missing <- n_elements - length(x_clean)
+    prop_missing <- n_missing / n_elements
   } else {
     x_clean <- as.vector(x)
+    n_missing <- sum(is.na(x_clean))
+    prop_missing <- n_missing / n_elements
   }
   
+  # Check if all values are missing
   if (length(x_clean) == 0) {
     return(list(
       dimensions = dims,
@@ -187,8 +184,8 @@ matrix_summary <- function(x, na.rm = TRUE) {
     prop_missing = prop_missing,
     min = min(x_clean),
     max = max(x_clean),
-    mean = mean(x_clean),
     median = median(x_clean),
+    mean = mean(x_clean),
     sd = sd(x_clean),
     range = diff(range(x_clean)),
     quantiles = quantile(x_clean, probs = c(0.05, 0.25, 0.75, 0.95))
@@ -197,26 +194,30 @@ matrix_summary <- function(x, na.rm = TRUE) {
 
 #' Progress Bar for Long Operations
 #'
-#' Simple text-based progress bar for tracking long-running operations.
+#' Displays a progress bar for tracking long-running operations.
+#' This is primarily used internally by the package functions.
 #'
 #' @param current Current iteration number
 #' @param total Total number of iterations
-#' @param width Width of progress bar in characters (default: 50)
-#' @param prefix Optional prefix text
-#' @return None (prints progress bar)
-#' @export
+#' @param width Width of the progress bar in characters (default: 50)
+#' @param prefix Text prefix for the progress bar (default: "Progress")
+#' @return NULL (prints progress bar to console)
+#' @keywords internal
 progress_bar <- function(current, total, width = 50, prefix = "Progress") {
   
-  percent <- current / total
-  filled <- round(width * percent)
-  bar <- paste0(rep("=", filled), rep("-", width - filled), collapse = "")
+  #
+  percent <- round((current / total) * 100, 1)
+  filled <- round((current / total) * width)
+  empty <- width - filled
   
-  cat(sprintf("\r%s: [%s] %d%% (%d/%d)", 
-              prefix, bar, round(percent * 100), current, total))
+  bar <- paste0(
+    prefix, ": [",
+    paste(rep("=", filled), collapse = ""),
+    paste(rep("-", empty), collapse = ""),
+    "] ", percent, "% (", current, "/", total, ")"
+  )
   
-  if (current == total) {
-    cat("\n")
-  }
-  
-  flush.console()
+  cat("\r", bar)
+  if (current == total) cat("\n")
+  utils::flush.console()
 }

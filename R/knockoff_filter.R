@@ -1,10 +1,3 @@
-#' @title Knockoff Filter and Variable Selection
-#' @name knockoff-filter
-#' @description
-#' Functions for computing W statistics and applying knockoff filters
-#' for variable selection with false discovery rate control.
-NULL
-
 #' Calculate W Statistics for Knockoff Analysis
 #'
 #' Computes W statistics by comparing test statistics from original variables
@@ -16,9 +9,9 @@ NULL
 #'   If a list, should contain M vectors of the same length as t_orig.
 #' @param method Method for computing W statistics:
 #'   \itemize{
-#'     \item "difference": W_j = T_j - max(T_{j,k}) (default)
-#'     \item "mk_median": Uses Model-X knockoff median-based statistics
-#'     \item "ratio": W_j = T_j / max(T_{j,k})
+#'     \item "difference": W_j = T_j - max(T_\{j,k\}) (default)
+#'     \item "median": Uses Model-X knockoff median-based statistics
+#'     \item "ratio": W_j = T_j / max(T_\{j,k\})
 #'   }
 #' @return Vector of W statistics for variable selection
 #' @export
@@ -31,21 +24,21 @@ NULL
 #'   c(1.9, 3.8, 4.1, 2.2, 3.1)
 #' )
 #' 
+#' w_median <- calculate_w_statistics(t_orig, t_knock, method = "median")
 #' w_diff <- calculate_w_statistics(t_orig, t_knock, method = "difference")
-#' w_mk <- calculate_w_statistics(t_orig, t_knock, method = "mk_median")
 #' }
-calculate_w_statistics <- function(t_orig, t_knock, method = "difference") {
+calculate_w_statistics <- function(t_orig, t_knock, method = "median") {
   
-  # Input validation
+  #
   if (!is.numeric(t_orig)) {
     stop("t_orig must be numeric")
   }
   
   if (is.list(t_knock)) {
-    # Multiple knockoff copies
+  #
     t_knock_matrix <- do.call(cbind, t_knock)
   } else if (is.vector(t_knock)) {
-    # Single knockoff copy
+  #
     t_knock_matrix <- matrix(t_knock, ncol = 1)
   } else {
     t_knock_matrix <- as.matrix(t_knock)
@@ -55,24 +48,24 @@ calculate_w_statistics <- function(t_orig, t_knock, method = "difference") {
     stop("Length of t_orig must match number of rows in t_knock")
   }
   
-  # Calculate W statistics based on method
+  #
   if (method == "difference") {
-    # Standard knockoff: W_j = T_j - max(T_j^knockoff)
+  #
     t_knock_max <- apply(t_knock_matrix, 1, max, na.rm = TRUE)
     W <- t_orig - t_knock_max
     
-  } else if (method == "mk_median") {
-    # Model-X knockoff with median method
-    mk_result <- MK.statistic(t_orig, t_knock_matrix, method = "median")
+  } else if (method == "median") {
+  #
+    mk_result <- mk_statistic(t_orig, t_knock_matrix, method = "median")
     W <- mk_result[, "tau"]
     
   } else if (method == "ratio") {
-    # Ratio-based statistics
+  #
     t_knock_max <- apply(t_knock_matrix, 1, max, na.rm = TRUE)
     W <- ifelse(t_knock_max > 0, t_orig / t_knock_max, t_orig)
     
   } else {
-    stop("Method must be one of: 'difference', 'mk_median', 'ratio'")
+    stop("Method must be one of: 'difference', 'median', 'ratio'")
   }
   
   return(W)
@@ -99,6 +92,7 @@ calculate_w_statistics <- function(t_orig, t_knock, method = "difference") {
 #' }
 knockoff_filter <- function(W, fdr = 0.1, offset = 1) {
   
+  #
   if (!is.numeric(W)) {
     stop("W must be numeric")
   }
@@ -107,15 +101,14 @@ knockoff_filter <- function(W, fdr = 0.1, offset = 1) {
     stop("fdr must be between 0 and 1")
   }
   
-  # Sort W statistics in decreasing order
+  #
   W_sorted_idx <- order(W, decreasing = TRUE)
   W_sorted <- W[W_sorted_idx]
   
-  # Calculate knockoff threshold
   n_positive <- cumsum(W_sorted > 0)
   n_negative <- cumsum(W_sorted <= 0)
   
-  # FDR control: find largest k such that (offset + n_negative[k]) / max(1, n_positive[k]) <= fdr
+  #
   ratio <- (offset + n_negative) / pmax(1, n_positive)
   k_max <- max(which(ratio <= fdr), 0)
   
@@ -138,14 +131,14 @@ knockoff_filter <- function(W, fdr = 0.1, offset = 1) {
 #'
 #' Computes kappa and tau statistics for Model-X knockoff methodology.
 #' This is an internal function called by calculate_w_statistics when
-#' method = "mk_median".
+#' method = "median".
 #'
 #' @param T_0 Test statistics for original variables
 #' @param T_k Matrix of test statistics for knockoff variables
 #' @param method Method for tau calculation ("median" or "max")
 #' @return Matrix with kappa and tau columns
 #' @keywords internal
-MK.statistic <- function(T_0, T_k, method = "median") {
+mk_statistic <- function(T_0, T_k, method = "median") {
   T_0 <- as.matrix(T_0)
   T_k <- as.matrix(T_k)
   T.temp <- cbind(T_0, T_k)
@@ -175,19 +168,20 @@ MK.statistic <- function(T_0, T_k, method = "median") {
 #' Calculate Model-X Knockoff Threshold
 #'
 #' Computes the threshold for variable selection using Model-X knockoff methodology.
+#' This is primarily an internal function used by the knockoff filter.
 #'
 #' @param T_0 Test statistics for original variables
 #' @param T_k Test statistics for knockoff variables
-#' @param fdr Target false discovery rate
-#' @param method Method for calculating statistics
-#' @param Rej.Bound Maximum number of rejections
-#' @return Threshold value
-#' @export
-MK.threshold <- function(T_0, T_k, fdr = 0.1, method = "median", Rej.Bound = 10000) {
-  stat <- MK.statistic(T_0, T_k, method = method)
+#' @param fdr Target false discovery rate (default: 0.1)
+#' @param method Method for calculating statistics ("median" or "max")
+#' @param Rej.Bound Maximum number of rejections (default: 10000)
+#' @return Threshold value for variable selection
+#' @keywords internal
+mk_threshold <- function(T_0, T_k, fdr = 0.1, method = "median", Rej.Bound = 10000) {
+  stat <- mk_statistic(T_0, T_k, method = method)
   kappa <- stat[, "kappa"]
   tau <- stat[, "tau"]
-  t <- MK.threshold.byStat(kappa, tau, M = ncol(as.matrix(T_k)), fdr = fdr, Rej.Bound = Rej.Bound)
+  t <- mk_threshold_by_stat(kappa, tau, M = ncol(as.matrix(T_k)), fdr = fdr, Rej.Bound = Rej.Bound)
   return(t)
 }
 
@@ -200,7 +194,7 @@ MK.threshold <- function(T_0, T_k, fdr = 0.1, method = "median", Rej.Bound = 100
 #' @param Rej.Bound Maximum number of rejections
 #' @return Threshold value
 #' @keywords internal
-MK.threshold.byStat <- function(kappa, tau, M, fdr = 0.1, Rej.Bound = 10000) {
+mk_threshold_by_stat <- function(kappa, tau, M, fdr = 0.1, Rej.Bound = 10000) {
   b <- order(tau, decreasing = TRUE)
   c_0 <- kappa[b] == 0
   ratio <- c()
@@ -227,13 +221,16 @@ MK.threshold.byStat <- function(kappa, tau, M, fdr = 0.1, Rej.Bound = 10000) {
 
 #' Calculate Model-X Knockoff Q-values by Statistics
 #'
-#' @param kappa Vector of kappa statistics
-#' @param tau Vector of tau statistics
-#' @param M Number of knockoff copies
-#' @param Rej.Bound Maximum number of rejections
-#' @return Vector of q-values
-#' @export
-MK.q.byStat <- function(kappa, tau, M, Rej.Bound = 10000) {
+#' Calculates q-values for Model-X knockoff variable selection based on 
+#' kappa and tau statistics. This is an internal computational function.
+#'
+#' @param kappa Vector of kappa statistics indicating which variable (original or knockoff) has maximum test statistic
+#' @param tau Vector of tau statistics representing the difference between max and median test statistics
+#' @param M Number of knockoff copies used in the analysis
+#' @param Rej.Bound Maximum number of rejections allowed (default: 10000)
+#' @return Vector of q-values for each variable
+#' @keywords internal
+mk_q_by_stat <- function(kappa, tau, M, Rej.Bound = 10000) {
   b <- order(tau, decreasing = TRUE)
   c_0 <- kappa[b] == 0
   ratio <- c()

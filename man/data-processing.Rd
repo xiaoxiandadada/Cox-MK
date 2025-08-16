@@ -2,7 +2,7 @@
 % Please edit documentation in R/data_processing.R
 \name{data-processing}
 \alias{data-processing}
-\title{Data Processing Utilities}
+\title{Load PLINK Data for Analysisata Processing Utilities}
 \description{
 Utility functions for data loading, processing, and validation specifically
 designed for genetic association studies.
