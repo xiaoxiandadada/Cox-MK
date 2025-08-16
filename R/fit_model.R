@@ -110,7 +110,7 @@ fit_cox_model_from_files <- function(phenotype_file, covariate_file, output_file
       if (!requireNamespace("SPACox", quietly = TRUE)) {
         stop("SPACox package not available")
       }
-      null_model <- SPACox::SPACox_Null_Model(
+      null_model <- get("SPACox_Null_Model", asNamespace("SPACox"))(
         formula = as.formula(formula_str),
         data = merged_data,
         pIDs = merged_data$IID,
@@ -271,7 +271,7 @@ fit_null_cox_model <- function(time, status, covariates = NULL) {
       # Add sample IDs for SPACox
       model_data$sample_id <- paste0("S", seq_len(nrow(model_data)))
       
-      null_model <- SPACox::SPACox_Null_Model(
+      null_model <- get("SPACox_Null_Model", asNamespace("SPACox"))(
         formula = as.formula(formula_str),
         data = model_data,
         pIDs = model_data$sample_id,

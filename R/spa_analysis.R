@@ -54,7 +54,7 @@ perform_association_testing <- function(X, null_model) {
         if (!requireNamespace("SPACox", quietly = TRUE)) {
           stop("SPACox package not available for score test")
         }
-        result <- SPACox::SPACox_Score_Test(
+        result <- get("SPACox_Score_Test", asNamespace("SPACox"))(
           geno = X[, j],
           obj_nullmodel = null_model
         )

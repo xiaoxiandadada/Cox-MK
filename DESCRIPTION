@@ -2,7 +2,7 @@ Package: CoxMK
 Type: Package
 Title: Cox Regression with Multiple Knockoffs for Survival Analysis
 Version: 0.1.0
-Author: yangchen
+Author: Yang Chen [aut, cre], Contributors [ctb]
 Maintainer: Yang Chen <yangchen5@stu.scu.edu.cn>
 Authors@R: c(
     person("Yang", "Chen", email = "yangchen5@stu.scu.edu.cn", role = c("aut", "cre")),
