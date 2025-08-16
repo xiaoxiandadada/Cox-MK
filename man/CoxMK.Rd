@@ -10,8 +10,8 @@ variable selection using the multiple knockoffs methodology.
 
 The workflow follows four main steps:
 1. **Generate Knockoffs**: Create knockoff variables using \code{\link{create_knockoffs}}
-2. **Fit Null Model**: Fit null Cox model using \code{\link{fit_null_cox_model}}
-3. **Perform Testing**: Conduct association testing using \code{\link{perform_association_testing}}
+2. **Fit Null Model**: Fit null Cox model (internal function)
+3. **Perform Testing**: Conduct association testing (internal function)
 4. **Apply Filter**: Select variables using \code{\link{knockoff_filter}}
 }
 \section{Main Functions}{
@@ -19,9 +19,8 @@ The workflow follows four main steps:
 \itemize{
   \item \code{\link{cox_knockoff_analysis}} - Complete knockoff analysis workflow
   \item \code{\link{create_knockoffs}} - Step 1: Generate knockoff variables
-  \item \code{\link{fit_null_cox_model}} - Step 2: Fit null Cox model for testing
-  \item \code{\link{perform_association_testing}} - Step 3: Perform association testing
   \item \code{\link{knockoff_filter}} - Step 4: Apply knockoff filter for variable selection
+  \item \code{\link{calculate_w_statistics}} - Calculate W statistics for selection
 }
 }
 
