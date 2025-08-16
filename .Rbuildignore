@@ -8,3 +8,9 @@
 ^\.DS_Store$
 ^doc$
 ^Meta$
+^\.git$
+^\.gitignore$
+^archive$
+^simulation$
+^sample$
+^step.*$

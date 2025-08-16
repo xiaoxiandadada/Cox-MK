@@ -123,33 +123,6 @@ perform_association_testing <- function(X, null_model) {
   ))
 }
 
-#' Calculate W Statistics
-#'
-#' Calculate W statistics for knockoff filter based on test statistics
-#' from original and knockoff variables.
-#'
-#' @param Z_orig Test statistics for original variables
-#' @param Z_ko Test statistics for knockoff variables  
-#' @param method Method for combining statistics ("median" or "difference")
-#' @return Vector of W statistics
-#' @noRd
-calculate_w_statistics <- function(Z_orig, Z_ko, method = "median") {
-  
-  if (length(Z_orig) != length(Z_ko)) {
-    stop("Original and knockoff statistics must have same length")
-  }
-  
-  if (method == "median") {
-    W <- pmax(Z_orig, Z_ko) * sign(Z_orig - Z_ko)
-  } else if (method == "difference") {
-    W <- Z_orig - Z_ko
-  } else {
-    stop("Method must be 'median' or 'difference'")
-  }
-  
-  return(W)
-}
-
 #' Apply SPA Analysis Workflow
 #'
 #' Complete SPA analysis workflow that performs association testing

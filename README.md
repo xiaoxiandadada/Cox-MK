@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="archive/coxmk_capsule_strong.svg" alt="CoxMK" width="400"/>
+  <img src="archive/coxmk_capsule_strong.svg" alt="CoxMK" width="80%"/>
 </div>
 
 [![R](https://img.shields.io/badge/R-%3E%3D3.5.0-blue.svg)](https://www.r-project.org/)
@@ -88,11 +88,18 @@ result$summary        # Analysis summary
 
 ## Citation
 
-```
-CoxMK: Cox Regression with Model-X Knockoffs for Survival Analysis
-Yang Chen (yangchen5@stu.scu.edu.cn)
-https://github.com/xiaoxiandadada/Cox-MK
-```
+@software{CoxMK2025,
+  title   = {CoxMK: Cox Regression with Mutiple Knockoffs for Survival Analysis},
+  author  = {Chen, Yang},
+  year    = {2025},
+  version = {0.1.0},
+  url     = {https://github.com/xiaoxiandadada/Cox-MK},
+  note    = {R package}
+}
+
+## Contact
+
+For questions, please contact yangchen5@stu.scu.edu.cn.
 
 ## License
 

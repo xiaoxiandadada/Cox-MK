@@ -8,6 +8,9 @@
 # macOS
 .DS_Store
 
+# Windows
+Thumbs.db
+
 # R check results
 *.Rcheck/
 
@@ -15,9 +18,18 @@
 *~
 *.swp
 *.tmp
+*.bak
+
+# Editor files
+.vscode/
+*.sublime-*
 
 # Debug files
 debug_*.R
+
+# Log files
+*.log
+slurm-*.out
 test_temp_*.R
 /doc/
 /Meta/

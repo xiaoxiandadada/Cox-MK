@@ -246,7 +246,7 @@ create_knockoffs <- function(
       }
       
       gdsfmt::closefn.gds(g)
-      cat("✓ GDS written:", gds_path, "\n")
+      cat("GDS written:", gds_path, "\n")
       
       return(list(knockoffs = X_k, gds_file = gds_path))
     } else {
