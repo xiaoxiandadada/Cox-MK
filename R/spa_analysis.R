@@ -1,25 +1,25 @@
-#' Perform Association Testing
-#'
-#' Performs association testing with genotype data using a fitted null model.
-#' This function handles both SPACox and standard Cox regression methods
-#' for genetic variant association analysis.
-#'
-#' @param X Genotype matrix (samples × SNPs)
-#' @param null_model Fitted null Cox model from fit_null_cox_model()
-#' @return List with test statistics and p-values
-#' @export
-#' @examples
-#' \dontrun{
-#' # Fit null model first
-#' null_model <- fit_null_cox_model(time, status, covariates)
-#' 
-#' # Perform association testing
-#' results <- perform_association_testing(genotype_matrix, null_model)
-#' 
-#' # Extract results
-#' test_stats <- results$test_stats
-#' p_values <- results$p_values
-#' }
+# Perform Association Testing
+#
+# Performs association testing with genotype data using a fitted null model.
+# This function handles both SPACox and standard Cox regression methods
+# for genetic variant association analysis.
+# This is an internal function.
+#
+# @param X Genotype matrix (samples × SNPs)
+# @param null_model Fitted null Cox model from fit_null_cox_model()
+# @return List with test statistics and p-values
+# @examples
+# \dontrun{
+# # Fit null model first
+# null_model <- fit_null_cox_model(time, status, covariates)
+# 
+# # Perform association testing
+# results <- perform_association_testing(genotype_matrix, null_model)
+# 
+# # Extract results
+# test_stats <- results$test_stats
+# p_values <- results$p_values
+# }
 perform_association_testing <- function(X, null_model) {
   
   if (!is.matrix(X) && !inherits(X, "Matrix")) {
@@ -51,6 +51,9 @@ perform_association_testing <- function(X, null_model) {
         }
         
         # SPACox score test
+        if (!requireNamespace("SPACox", quietly = TRUE)) {
+          stop("SPACox package not available for score test")
+        }
         result <- SPACox::SPACox_Score_Test(
           geno = X[, j],
           obj_nullmodel = null_model

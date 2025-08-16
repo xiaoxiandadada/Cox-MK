@@ -1,8 +1,8 @@
 \name{CoxMK-workflow}
 \alias{CoxMK-workflow}
-\title{CoxMK: Four-Step Cox Regression with Model-X Knockoffs Workflow}
+\title{CoxMK: Four-Step Cox Regression with Multiple Knockoffs Workflow}
 \description{
-Complete workflow for Cox regression analysis with Model-X knockoffs for survival analysis.
+Complete workflow for Cox regression analysis with Multiple knockoffs for survival analysis.
 This package implements a four-step methodology for variable selection with false discovery rate control.
 }
 
@@ -12,26 +12,15 @@ The CoxMK workflow consists of four main steps:
 \subsection{Step 1: Generate Knockoff Variables}{
 \strong{Main Function:} \code{\link{create_knockoffs}}
 
-\strong{Supporting Functions:}
-\itemize{
-  \item \code{\link{load_plink_data}} - Load genotype data from PLINK format
-}
-
 \strong{Purpose:} Generate knockoff variables that preserve the correlation structure 
-of the original variables while being conditionally independent.
+of the original variables while being conditionally independent using multiple knockoffs approach.
 
 \strong{Input:} Genotype matrix or PLINK files
-\strong{Output:} Knockoff matrices stored in GDS format
+\strong{Output:} Multiple knockoff matrices stored in GDS format
 }
 
 \subsection{Step 2: Fit Null Cox Model}{
-\strong{Main Function:} \code{\link{fit_null_cox_model}}
-
-\strong{Supporting Functions:}
-\itemize{
-  \item \code{\link{prepare_phenotype}} - Prepare survival time and status data
-  \item \code{\link{load_covariates}} - Load covariate data
-}
+\strong{Main Function:} \code{fit_null_cox_model} (internal)
 
 \strong{Purpose:} Fit null Cox proportional hazards model using SPACox for efficient 
 large-scale analysis.
@@ -41,7 +30,7 @@ large-scale analysis.
 }
 
 \subsection{Step 3: Perform Association Testing}{
-\strong{Main Function:} \code{\link{perform_association_testing}}
+\strong{Main Function:} \code{perform_association_testing} (internal)
 
 \strong{Purpose:} Conduct association testing using both original and knockoff variables
 with the fitted null model.
@@ -58,7 +47,7 @@ with the fitted null model.
   \item \code{\link{calculate_w_statistics}} - Calculate W statistics
 }
 
-\strong{Purpose:} Apply the knockoff filter to select significant variables 
+\strong{Purpose:} Apply the multiple knockoffs filter to select significant variables 
 with false discovery rate control.
 
 \strong{Input:} Test statistics from original and knockoff variables
@@ -103,15 +92,15 @@ results <- cox_knockoff_analysis(
 }
 
 \seealso{
-\strong{Step 1:} \code{\link{create_knockoffs}}
+\strong{Main Functions:}
 
-\strong{Step 2:} \code{\link{fit_null_cox_model}}
+\code{\link{cox_knockoff_analysis}} - Complete workflow in one function
 
-\strong{Step 3:} \code{\link{perform_association_testing}}
+\code{\link{create_knockoffs}} - Generate multiple knockoff variables
 
-\strong{Step 4:} \code{\link{knockoff_filter}}
+\code{\link{knockoff_filter}} - Apply knockoff filter for variable selection
 
-\strong{Complete Workflow:} \code{\link{cox_knockoff_analysis}}
+\code{\link{calculate_w_statistics}} - Calculate W statistics
 }
 
 \keyword{survival}

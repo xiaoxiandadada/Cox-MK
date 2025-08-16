@@ -2,11 +2,11 @@
 % Please edit documentation in R/main.R
 \name{CoxMK}
 \alias{CoxMK}
-\title{CoxMK: Cox Regression with Model-X Knockoffs}
+\title{CoxMK: Cox Regression with Multiple Knockoffs}
 \description{
-Main interface functions for Cox regression analysis with Model-X knockoffs.
+Main interface functions for Cox regression analysis with Multiple knockoffs.
 This package provides a complete workflow for survival analysis with 
-variable selection using the knockoff methodology.
+variable selection using the multiple knockoffs methodology.
 
 The workflow follows four main steps:
 1. **Generate Knockoffs**: Create knockoff variables using \code{\link{create_knockoffs}}

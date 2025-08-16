@@ -127,17 +127,16 @@ knockoff_filter <- function(W, fdr = 0.1, offset = 1) {
   return(selected)
 }
 
-#' Model-X Knockoff Statistics Computation
-#'
-#' Computes kappa and tau statistics for Model-X knockoff methodology.
-#' This is an internal function called by calculate_w_statistics when
-#' method = "median".
-#'
-#' @param T_0 Test statistics for original variables
-#' @param T_k Matrix of test statistics for knockoff variables
-#' @param method Method for tau calculation ("median" or "max")
-#' @return Matrix with kappa and tau columns
-#' @keywords internal
+# Model-X Knockoff Statistics Computation
+#
+# Computes kappa and tau statistics for Model-X knockoff methodology.
+# This is an internal function called by calculate_w_statistics when
+# method = "median".
+#
+# @param T_0 Test statistics for original variables
+# @param T_k Matrix of test statistics for knockoff variables
+# @param method Method for tau calculation ("median" or "max")
+# @return Matrix with kappa and tau columns
 mk_statistic <- function(T_0, T_k, method = "median") {
   T_0 <- as.matrix(T_0)
   T_k <- as.matrix(T_k)
@@ -165,18 +164,17 @@ mk_statistic <- function(T_0, T_k, method = "median") {
   return(cbind(kappa = kappa, tau = tau))
 }
 
-#' Calculate Model-X Knockoff Threshold
-#'
-#' Computes the threshold for variable selection using Model-X knockoff methodology.
-#' This is primarily an internal function used by the knockoff filter.
-#'
-#' @param T_0 Test statistics for original variables
-#' @param T_k Test statistics for knockoff variables
-#' @param fdr Target false discovery rate (default: 0.1)
-#' @param method Method for calculating statistics ("median" or "max")
-#' @param Rej.Bound Maximum number of rejections (default: 10000)
-#' @return Threshold value for variable selection
-#' @keywords internal
+# Calculate Model-X Knockoff Threshold
+#
+# Computes the threshold for variable selection using Model-X knockoff methodology.
+# This is primarily an internal function used by the knockoff filter.
+#
+# @param T_0 Test statistics for original variables
+# @param T_k Test statistics for knockoff variables
+# @param fdr Target false discovery rate (default: 0.1)
+# @param method Method for calculating statistics ("median" or "max")
+# @param Rej.Bound Maximum number of rejections (default: 10000)
+# @return Threshold value for variable selection
 mk_threshold <- function(T_0, T_k, fdr = 0.1, method = "median", Rej.Bound = 10000) {
   stat <- mk_statistic(T_0, T_k, method = method)
   kappa <- stat[, "kappa"]
@@ -185,15 +183,15 @@ mk_threshold <- function(T_0, T_k, fdr = 0.1, method = "median", Rej.Bound = 100
   return(t)
 }
 
-#' Calculate Model-X Knockoff Threshold by Statistics
+#Calculate Model-X Knockoff Threshold by Statistics
 #'
-#' @param kappa Vector of kappa statistics
-#' @param tau Vector of tau statistics  
-#' @param M Number of knockoff copies
-#' @param fdr Target false discovery rate
-#' @param Rej.Bound Maximum number of rejections
-#' @return Threshold value
-#' @keywords internal
+#@param kappa Vector of kappa statistics
+#@param tau Vector of tau statistics  
+#@param M Number of knockoff copies
+#@param fdr Target false discovery rate
+#@param Rej.Bound Maximum number of rejections
+#@return Threshold value
+#@keywords internal
 mk_threshold_by_stat <- function(kappa, tau, M, fdr = 0.1, Rej.Bound = 10000) {
   b <- order(tau, decreasing = TRUE)
   c_0 <- kappa[b] == 0
@@ -219,17 +217,17 @@ mk_threshold_by_stat <- function(kappa, tau, M, fdr = 0.1, Rej.Bound = 10000) {
   }
 }
 
-#' Calculate Model-X Knockoff Q-values by Statistics
+#Calculate Model-X Knockoff Q-values by Statistics
 #'
-#' Calculates q-values for Model-X knockoff variable selection based on 
-#' kappa and tau statistics. This is an internal computational function.
+#Calculates q-values for Model-X knockoff variable selection based on 
+#kappa and tau statistics. This is an internal computational function.
 #'
-#' @param kappa Vector of kappa statistics indicating which variable (original or knockoff) has maximum test statistic
-#' @param tau Vector of tau statistics representing the difference between max and median test statistics
-#' @param M Number of knockoff copies used in the analysis
-#' @param Rej.Bound Maximum number of rejections allowed (default: 10000)
-#' @return Vector of q-values for each variable
-#' @keywords internal
+#@param kappa Vector of kappa statistics indicating which variable (original or knockoff) has maximum test statistic
+#@param tau Vector of tau statistics representing the difference between max and median test statistics
+#@param M Number of knockoff copies used in the analysis
+#@param Rej.Bound Maximum number of rejections allowed (default: 10000)
+#@return Vector of q-values for each variable
+#@keywords internal
 mk_q_by_stat <- function(kappa, tau, M, Rej.Bound = 10000) {
   b <- order(tau, decreasing = TRUE)
   c_0 <- kappa[b] == 0

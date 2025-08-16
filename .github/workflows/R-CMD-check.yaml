@@ -41,16 +41,8 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: |
-            any::rcmdcheck
+          extra-packages: any::rcmdcheck
           needs: check
-
-      - name: Install SPACox (optional)
-        continue-on-error: true
-        run: |
-          install.packages("remotes")
-          remotes::install_github("WenjianBI/SPACox")
-        shell: Rscript {0}
 
       - uses: r-lib/actions/check-r-package@v2
         with:

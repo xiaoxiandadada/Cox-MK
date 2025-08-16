@@ -1,17 +1,17 @@
-#' @title Knockoff Variable Generation
-#' @name knockoff-generation
-#' @description
-#' Functions for generating Model-X knockoff variables using leveraging scores,
-#' clustering, and adaptive lasso methods specifically designed for genetic data.
-#' @importFrom Matrix Matrix crossprod
-#' @importFrom irlba irlba
-#' @importFrom stats cutree hclust as.dist coef lm.fit cov2cor cor
-#' @importFrom gdsfmt createfn.gds add.gdsn closefn.gds
+# @title Knockoff Variable Generation
+# @name knockoff-generation
+# @description
+# Functions for generating Multiple knockoff variables using leveraging scores,
+# clustering, and adaptive lasso methods specifically designed for genetic data.
+# @importFrom Matrix Matrix crossprod
+# @importFrom irlba irlba
+# @importFrom stats cutree hclust as.dist coef lm.fit cov2cor cor
+# @importFrom gdsfmt createfn.gds add.gdsn closefn.gds
 NULL
 
-#' Create Model-X Knockoffs for Genetic Data
-#'
-#' Generate knockoff variables for genotype data using the Model-X knockoff 
+#' Create Multiple Knockoffs for Genetic Data
+#' 
+#' Generate knockoff variables for genotype data using the Multiple knockoff 
 #' method with leveraging scores and clustering specifically optimized for
 #' genetic variant data.
 #'

@@ -1,9 +1,9 @@
-#' @title CoxMK: Cox Regression with Model-X Knockoffs
+#' @title CoxMK: Cox Regression with Multiple Knockoffs
 #' @name CoxMK
 #' @description
-#' Main interface functions for Cox regression analysis with Model-X knockoffs.
+#' Main interface functions for Cox regression analysis with Multiple knockoffs.
 #' This package provides a complete workflow for survival analysis with 
-#' variable selection using the knockoff methodology.
+#' variable selection using the multiple knockoffs methodology.
 #' 
 #' The workflow follows four main steps:
 #' 1. **Generate Knockoffs**: Create knockoff variables using \code{\link{create_knockoffs}}
@@ -28,7 +28,7 @@ NULL
 
 #' Complete Cox Knockoff Analysis Workflow
 #'
-#' Performs a complete Model-X knockoff analysis following the four-step workflow:
+#' Performs a complete Multiple knockoff analysis following the four-step workflow:
 #' 1. Generate knockoff variables from PLINK data and save to GDS format
 #' 2. Fit null Cox model using SPACox for efficient large-scale analysis
 #' 3. Perform SPA testing using original and knockoff variables
@@ -127,7 +127,7 @@ cox_knockoff_analysis <- function(plink_prefix, time, status,
     }
   }
   
-  cat("=== Cox Model-X Knockoff Analysis Workflow ===\n")
+  cat("=== Cox Multiple Knockoff Analysis Workflow ===\n")
   
   # Step 1: Generate knockoff variables from PLINK data
   cat("\n1. GENERATING KNOCKOFF VARIABLES FROM PLINK DATA\n")

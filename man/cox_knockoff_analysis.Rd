@@ -51,7 +51,7 @@ List containing:
   \item{test_results}{SPA test results}
 }
 \description{
-Performs a complete Model-X knockoff analysis following the four-step workflow:
+Performs a complete Multiple knockoff analysis following the four-step workflow:
 1. Generate knockoff variables from PLINK data and save to GDS format
 2. Fit null Cox model using SPACox for efficient large-scale analysis
 3. Perform SPA testing using original and knockoff variables

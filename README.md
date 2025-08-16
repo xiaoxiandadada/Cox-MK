@@ -88,6 +88,7 @@ result$summary        # Analysis summary
 
 ## Citation
 
+```
 @software{CoxMK2025,
   title   = {CoxMK: Cox Regression with Mutiple Knockoffs for Survival Analysis},
   author  = {Chen, Yang},
@@ -96,6 +97,7 @@ result$summary        # Analysis summary
   url     = {https://github.com/xiaoxiandadada/Cox-MK},
   note    = {R package}
 }
+```
 
 ## Contact
 

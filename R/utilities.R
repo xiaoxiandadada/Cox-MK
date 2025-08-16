@@ -1,13 +1,13 @@
-#' Sparse Matrix Correlation Computation
+#Sparse Matrix Correlation Computation
 #'
-#' Efficiently computes correlation and covariance matrices for sparse matrices
-#' using optimized sparse matrix operations. This is an internal utility function.
+#Efficiently computes correlation and covariance matrices for sparse matrices
+#using optimized sparse matrix operations. This is an internal utility function.
 #'
-#' @param x A sparse matrix (can be dgCMatrix or similar)
-#' @return List containing:
-#'   \item{cov}{The covariance matrix}
-#'   \item{cor}{The correlation matrix}
-#' @keywords internal
+#@param x A sparse matrix (can be dgCMatrix or similar)
+#@return List containing:
+#  \item{cov}{The covariance matrix}
+#  \item{cor}{The correlation matrix}
+#@keywords internal
 sparse_cor <- function(x) {
   # Ensure x is a matrix-like object
   if (!is.matrix(x) && !inherits(x, "Matrix")) {
@@ -24,16 +24,16 @@ sparse_cor <- function(x) {
   ))
 }
 
-#' Sparse Cross-Covariance Computation
+#Sparse Cross-Covariance Computation
 #'
-#' Computes cross-covariance between two sparse matrices efficiently.
-#' This is an internal utility function for knockoff generation.
+#Computes cross-covariance between two sparse matrices efficiently.
+#This is an internal utility function for knockoff generation.
 #'
-#' @param x A numeric matrix (can be sparse)
-#' @param y A numeric matrix (can be sparse)
-#' @return List containing:
-#'   \item{cov}{The cross-covariance matrix}
-#' @keywords internal
+#@param x A numeric matrix (can be sparse)
+#@param y A numeric matrix (can be sparse)
+#@return List containing:
+#  \item{cov}{The cross-covariance matrix}
+#@keywords internal
 sparse_cov_cross <- function(x, y) {
   # Compute cross-covariance matrix
   n <- nrow(x)
@@ -50,15 +50,15 @@ sparse_cov_cross <- function(x, y) {
   return(list(cov = cross_cov))
 }
 
-#' Find N-th Largest Value
+#Find N-th Largest Value
 #'
-#' Efficiently finds the n-th largest value in a numeric vector.
-#' This is primarily used internally for knockoff statistics computation.
+#Efficiently finds the n-th largest value in a numeric vector.
+#This is primarily used internally for knockoff statistics computation.
 #'
-#' @param x A numeric vector
-#' @param n The position (1 = largest, 2 = second largest, etc.)
-#' @return The n-th largest value in the vector
-#' @keywords internal
+#@param x A numeric vector
+#@param n The position (1 = largest, 2 = second largest, etc.)
+#@return The n-th largest value in the vector
+#@keywords internal
 max_nth <- function(x, n) {
   #
   if (n > length(x)) {
@@ -67,16 +67,16 @@ max_nth <- function(x, n) {
   return(sort(x, partial = length(x) - (n - 1))[length(x) - (n - 1)])
 }
 
-#' Safe Matrix Conversion
+#Safe Matrix Conversion
 #'
-#' Safely converts various matrix-like objects to standard matrix format,
-#' handling sparse matrices and potential memory issues. This is an internal
-#' utility function.
+#Safely converts various matrix-like objects to standard matrix format,
+#handling sparse matrices and potential memory issues. This is an internal
+#utility function.
 #'
-#' @param x Matrix-like object (matrix, Matrix, data.frame)
-#' @param sparse Whether to maintain sparsity if possible (default: FALSE)
-#' @return Matrix object
-#' @keywords internal
+#@param x Matrix-like object (matrix, Matrix, data.frame)
+#@param sparse Whether to maintain sparsity if possible (default: FALSE)
+#@return Matrix object
+#@keywords internal
 safe_as_matrix <- function(x, sparse = FALSE) {
   
   #
@@ -110,16 +110,16 @@ safe_as_matrix <- function(x, sparse = FALSE) {
   }
 }
 
-#' Validate Matrix Dimensions
+#Validate Matrix Dimensions
 #'
-#' Validates that two matrices have compatible dimensions for a given operation.
-#' This is an internal utility function for dimension checking.
+#Validates that two matrices have compatible dimensions for a given operation.
+#This is an internal utility function for dimension checking.
 #'
-#' @param x First matrix
-#' @param y Second matrix  
-#' @param operation Type of operation ("multiply", "add", "match_rows", "match_cols")
-#' @return Logical indicating whether dimensions are compatible
-#' @keywords internal
+#@param x First matrix
+#@param y Second matrix  
+#@param operation Type of operation ("multiply", "add", "match_rows", "match_cols")
+#@return Logical indicating whether dimensions are compatible
+#@keywords internal
 validate_dimensions <- function(x, y, operation = "multiply") {
   
   #
@@ -139,16 +139,16 @@ validate_dimensions <- function(x, y, operation = "multiply") {
   )
 }
 
-#' Summary Statistics for Matrix
+#Summary Statistics for Matrix
 #'
-#' Computes comprehensive summary statistics for a matrix, handling
-#' missing values and providing both numerical and distributional summaries.
-#' This is primarily used for debugging and internal diagnostics.
+#Computes comprehensive summary statistics for a matrix, handling
+#missing values and providing both numerical and distributional summaries.
+#This is primarily used for debugging and internal diagnostics.
 #'
-#' @param x Numeric matrix
-#' @param na.rm Whether to remove NA values (default: TRUE)
-#' @return List containing various summary statistics
-#' @keywords internal
+#@param x Numeric matrix
+#@param na.rm Whether to remove NA values (default: TRUE)
+#@return List containing various summary statistics
+#@keywords internal
 matrix_summary <- function(x, na.rm = TRUE) {
   
   #
@@ -192,17 +192,17 @@ matrix_summary <- function(x, na.rm = TRUE) {
   )
 }
 
-#' Progress Bar for Long Operations
+#Progress Bar for Long Operations
 #'
-#' Displays a progress bar for tracking long-running operations.
-#' This is primarily used internally by the package functions.
+#Displays a progress bar for tracking long-running operations.
+#This is primarily used internally by the package functions.
 #'
-#' @param current Current iteration number
-#' @param total Total number of iterations
-#' @param width Width of the progress bar in characters (default: 50)
-#' @param prefix Text prefix for the progress bar (default: "Progress")
-#' @return NULL (prints progress bar to console)
-#' @keywords internal
+#@param current Current iteration number
+#@param total Total number of iterations
+#@param width Width of the progress bar in characters (default: 50)
+#@param prefix Text prefix for the progress bar (default: "Progress")
+#@return NULL (prints progress bar to console)
+#@keywords internal
 progress_bar <- function(current, total, width = 50, prefix = "Progress") {
   
   #

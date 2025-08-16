@@ -2,7 +2,7 @@
 % Please edit documentation in R/create_knockoffs.R
 \name{create_knockoffs}
 \alias{create_knockoffs}
-\title{Create Model-X Knockoffs for Genetic Data}
+\title{Create Multiple Knockoffs for Genetic Data}
 \usage{
 create_knockoffs(
   X,
@@ -76,7 +76,7 @@ If save_gds is TRUE, returns the path to the saved GDS file.
   containing knockoff variables.
 }
 \description{
-Generate knockoff variables for genotype data using the Model-X knockoff 
+Generate knockoff variables for genotype data using the Multiple knockoff 
 method with leveraging scores and clustering specifically optimized for
 genetic variant data.
 }

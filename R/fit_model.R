@@ -1,42 +1,42 @@
-#' Fit Cox Model from Files
+#Fit Cox Model from Files
 #'
-#' Fits a null Cox model by reading phenotype and covariate data from files.
-#' This function is designed for batch processing and large-scale analysis
-#' where data is stored in separate files.
+#Fits a null Cox model by reading phenotype and covariate data from files.
+#This function is designed for batch processing and large-scale analysis
+#where data is stored in separate files.
 #'
-#' @param phenotype_file Path to CSV file with columns: IID, time, status
-#' @param covariate_file Path to CSV file with columns: IID, covar1, covar2, ...
-#' @param output_file Path to RDS file to save the fitted null model
-#' @param use_spacox Whether to try using SPACox package (default: TRUE)
-#' @return Invisible path to the output file
-#' @keywords internal
-#' @examples
-#' \dontrun{
-#' # Prepare example data files
-#' pheno_data <- data.frame(
-#'   IID = paste0("ID", 1:100),
-#'   time = rexp(100, 0.1),
-#'   status = rbinom(100, 1, 0.3)
-#' )
-#' covar_data <- data.frame(
-#'   IID = paste0("ID", 1:100),
-#'   age = rnorm(100, 50, 10),
-#'   sex = rbinom(100, 1, 0.5)
-#' )
-#' 
-#' write.csv(pheno_data, "phenotype.csv", row.names = FALSE)
-#' write.csv(covar_data, "covariates.csv", row.names = FALSE)
-#' 
-#' # Fit model from files
-#' fit_cox_model_from_files(
-#'   phenotype_file = "phenotype.csv",
-#'   covariate_file = "covariates.csv", 
-#'   output_file = "null_model.rds"
-#' )
-#' 
-#' # Load the fitted model
-#' model_info <- readRDS("null_model.rds")
-#' }
+#@param phenotype_file Path to CSV file with columns: IID, time, status
+#@param covariate_file Path to CSV file with columns: IID, covar1, covar2, ...
+#@param output_file Path to RDS file to save the fitted null model
+#@param use_spacox Whether to try using SPACox package (default: TRUE)
+#@return Invisible path to the output file
+#@keywords internal
+#@examples
+#\dontrun{
+## Prepare example data files
+#pheno_data <- data.frame(
+#  IID = paste0("ID", 1:100),
+#  time = rexp(100, 0.1),
+#  status = rbinom(100, 1, 0.3)
+#)
+#covar_data <- data.frame(
+#  IID = paste0("ID", 1:100),
+#  age = rnorm(100, 50, 10),
+#  sex = rbinom(100, 1, 0.5)
+#)
+#
+#write.csv(pheno_data, "phenotype.csv", row.names = FALSE)
+#write.csv(covar_data, "covariates.csv", row.names = FALSE)
+#
+## Fit model from files
+#fit_cox_model_from_files(
+#  phenotype_file = "phenotype.csv",
+#  covariate_file = "covariates.csv", 
+#  output_file = "null_model.rds"
+#)
+#
+## Load the fitted model
+#model_info <- readRDS("null_model.rds")
+#}
 fit_cox_model_from_files <- function(phenotype_file, covariate_file, output_file, 
                                    use_spacox = TRUE) {
   
@@ -107,6 +107,9 @@ fit_cox_model_from_files <- function(phenotype_file, covariate_file, output_file
     
     # Fit SPACox null model
     tryCatch({
+      if (!requireNamespace("SPACox", quietly = TRUE)) {
+        stop("SPACox package not available")
+      }
       null_model <- SPACox::SPACox_Null_Model(
         formula = as.formula(formula_str),
         data = merged_data,
@@ -188,35 +191,35 @@ fit_cox_model_from_files <- function(phenotype_file, covariate_file, output_file
   invisible(output_file)
 }
 
-#' Fit Null Cox Model
-#'
-#' Fits a null Cox model with only covariates (no genetic variants).
-#' This function uses SPACox when available for large-scale analysis,
-#' and falls back to standard Cox regression otherwise.
-#'
-#' @param time Survival times
-#' @param status Event indicators
-#' @param covariates Covariate data frame (optional)
-#' @return Fitted Cox model object (SPACox or coxph)
-#' @export
-#' @examples
-#' \dontrun{
-#' # Example with covariates
-#' data(example_phenotype)
-#' data(example_covariates)
-#' 
-#' null_model <- fit_null_cox_model(
-#'   time = example_phenotype$time,
-#'   status = example_phenotype$status,
-#'   covariates = example_covariates
-#' )
-#' 
-#' # Example without covariates
-#' null_model <- fit_null_cox_model(
-#'   time = example_phenotype$time,
-#'   status = example_phenotype$status
-#' )
-#' }
+# Fit Null Cox Model
+#
+# Fits a null Cox model with only covariates (no genetic variants).
+# This function uses SPACox when available for large-scale analysis,
+# and falls back to standard Cox regression otherwise.
+# This is an internal function.
+#
+# @param time Survival times
+# @param status Event indicators
+# @param covariates Covariate data frame (optional)
+# @return Fitted Cox model object (SPACox or coxph)
+# @examples
+# \dontrun{
+# # Example with covariates
+# data(example_phenotype)
+# data(example_covariates)
+# 
+# null_model <- fit_null_cox_model(
+#   time = example_phenotype$time,
+#   status = example_phenotype$status,
+#   covariates = example_covariates
+# )
+# 
+# # Example without covariates
+# null_model <- fit_null_cox_model(
+#   time = example_phenotype$time,
+#   status = example_phenotype$status
+# )
+# }
 fit_null_cox_model <- function(time, status, covariates = NULL) {
   
   # Input validation
@@ -260,6 +263,10 @@ fit_null_cox_model <- function(time, status, covariates = NULL) {
   # Try SPACox first if available
   if (requireNamespace("SPACox", quietly = TRUE)) {
     tryCatch({
+      
+      if (!requireNamespace("SPACox", quietly = TRUE)) {
+        stop("SPACox package not available")
+      }
       
       # Add sample IDs for SPACox
       model_data$sample_id <- paste0("S", seq_len(nrow(model_data)))

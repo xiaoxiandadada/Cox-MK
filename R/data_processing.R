@@ -1,29 +1,27 @@
-#' Load PLINK Data for Analysisata Processing Utilities  
-#' @name data-processing
-#' @description
-#' Utility functions for data loading, processing, and validation specifically
-#' designed for genetic association studies.
-#' @importFrom utils read.table flush.console
-#' @importFrom stats sd quantile residuals
-#' @importFrom gdsfmt openfn.gds read.gdsn closefn.gds index.gdsn
+# Load PLINK Data for Analysisata Processing Utilities  
+# @name data-processing
+# @description
+# Utility functions for data loading, processing, and validation specifically
+# designed for genetic association studies.
+# @importFrom utils read.table flush.console
+# @importFrom stats sd quantile residuals
+# @importFrom gdsfmt openfn.gds read.gdsn closefn.gds index.gdsn
 NULL
 
-#' Load PLINK Format Genetic Data
-#'
-#' Loads genetic data from PLINK binary format (.bed/.bim/.fam files) and
-#' converts it to a sparse matrix format suitable for knockoff analysis.
-#'
-#' @param bed_path Path to PLINK .bed file (without extension)
-#' @param verbose Whether to print loading progress (default: TRUE)
-#' @return List containing genotype matrix and metadata
-#' @keywords internal
-#' @examples
-#' \dontrun{
-#' # Load PLINK data
-#' extdata_path <- system.file('extdata', package = 'CoxMK')
-#' plink_data <- load_plink_data(file.path(extdata_path, 'sample'))
-#' }
-#' @export
+# Load PLINK Format Genetic Data
+#
+# Loads genetic data from PLINK binary format (.bed/.bim/.fam files) and
+# converts it to a sparse matrix format suitable for knockoff analysis.
+# This is an internal function called by create_knockoffs.
+# @param bed_path Path to PLINK .bed file (without extension)
+# @param verbose Whether to print loading progress (default: TRUE)
+# @return List containing genotype matrix and metadata
+# @examples
+# \dontrun{
+# # Load PLINK data
+# extdata_path <- system.file('extdata', package = 'CoxMK')
+# plink_data <- load_plink_data(file.path(extdata_path, 'sample'))
+# }
 load_plink_data <- function(bed_path, verbose = TRUE) {
   
   if (verbose) cat("Loading PLINK data from:", bed_path, "\n")
@@ -71,26 +69,25 @@ load_plink_data <- function(bed_path, verbose = TRUE) {
   )
 }
 
-#' Prepare Phenotype Data for Analysis
-#'
-#' Loads and processes phenotype data for survival analysis, handling various
-#' input formats and performing basic validation.
-#'
-#' @param phenotype_file Path to phenotype file
-#' @param time_col Column name or index for survival times (default: "time")
-#' @param status_col Column name or index for event status (default: "status")
-#' @param status_file Optional separate file for event status
-#' @param sep Field separator (default: tab-delimited)
-#' @param header Whether file has header (default: TRUE)
-#' @return Data frame with columns: time, status, and optional sample IDs
-#' @keywords internal
-#' @examples
-#' \dontrun{
-#' # Load phenotype data
-#' extdata_path <- system.file('extdata', package = 'CoxMK')
-#' pheno_data <- prepare_phenotype(file.path(extdata_path, 'tte_phenotype.txt'))
-#' }
-#' @export
+# Prepare Phenotype Data for Analysis
+#
+# Loads and processes phenotype data for survival analysis, handling various
+# input formats and performing basic validation.
+# This is an internal function.
+#
+# @param phenotype_file Path to phenotype file
+# @param time_col Column name or index for survival times (default: "time")
+# @param status_col Column name or index for event status (default: "status")
+# @param status_file Optional separate file for event status
+# @param sep Field separator (default: tab-delimited)
+# @param header Whether file has header (default: TRUE)
+# @return Data frame with columns: time, status, and optional sample IDs
+# @examples
+# \dontrun{
+# # Load phenotype data
+# extdata_path <- system.file('extdata', package = 'CoxMK')
+# pheno_data <- prepare_phenotype(file.path(extdata_path, 'tte_phenotype.txt'))
+# }
 prepare_phenotype <- function(phenotype_file, time_col = "time", status_col = "status",
                             status_file = NULL, sep = "\t", header = TRUE) {
   
@@ -175,15 +172,15 @@ prepare_phenotype <- function(phenotype_file, time_col = "time", status_col = "s
   return(result_data)
 }
 
-#' Load Covariate Data
-#'
-#' Loads and processes covariate data for inclusion in survival models.
-#'
-#' @param covariate_file Path to covariate file
-#' @param exclude_cols Column names to exclude from covariate matrix, typically
-#'   the analysis (default: c("FID", "IID")).
-#' @return Data frame of covariates
-#' @export
+# Load Covariate Data
+#
+# Loads and processes covariate data for inclusion in survival models.
+# This is an internal function.
+#
+# @param covariate_file Path to covariate file
+# @param exclude_cols Column names to exclude from covariate matrix, typically
+#   the analysis (default: c("FID", "IID")).
+# @return Data frame of covariates
 load_covariates <- function(covariate_file, exclude_cols = c("FID", "IID")) {
   
   if (!file.exists(covariate_file)) {
@@ -235,15 +232,14 @@ load_covariates <- function(covariate_file, exclude_cols = c("FID", "IID")) {
 
 #' Load Knockoff Data from GDS File
 #'
-#' Load original genotypes and knockoff variables from a GDS file.
-#'
-#' @param gds_file Path to the GDS file containing knockoff data
-#' @return List containing:
-#'   \item{original}{Original genotype matrix}
-#'   \item{knockoffs}{List of knockoff matrices}
-#'   \item{sample_ids}{Sample IDs}
-#'   \item{positions}{SNP positions}
-#' @keywords internal
+# Load original genotypes and knockoff variables from a GDS file.
+#
+# @param gds_file Path to the GDS file containing knockoff data
+# @return List containing:
+#   \item{original}{Original genotype matrix}
+#   \item{knockoffs}{List of knockoff matrices}
+#   \item{sample_ids}{Sample IDs}
+#   \item{positions}{SNP positions}
 load_knockoff_gds <- function(gds_file) {
   
   if (!file.exists(gds_file)) {
