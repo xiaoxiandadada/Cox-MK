@@ -27,8 +27,7 @@ Imports:
     gdsfmt,
     BEDMatrix
 Suggests:
-    testthat (>= 3.0.0),
-    SPACox
+    testthat (>= 3.0.0)
 Config/testthat/edition: 3
 URL: https://github.com/xiaoxiandadada/Cox-MK
 BugReports: https://github.com/xiaoxiandadada/Cox-MK/issues
