@@ -3,6 +3,7 @@ Type: Package
 Title: Cox Regression with Multiple Knockoffs for Survival Analysis
 Version: 0.1.0
 Author: yangchen
+Maintainer: Yang Chen <yangchen5@stu.scu.edu.cn>
 Authors@R: c(
     person("Yang", "Chen", email = "yangchen5@stu.scu.edu.cn", role = c("aut", "cre")),
     person("Contributors", "", role = "ctb")
@@ -11,9 +12,7 @@ Description: Implements Cox regression analysis with Multiple knockoffs for
     variable selection in survival analysis. The package provides functions 
     for generating multiple knockoff variables, fitting null models, performing 
     association analysis, and calculating W statistics for variable selection 
-    with false discovery rate control. For large-scale genetic data, the 
-    optional SPACox package can be installed from GitHub for enhanced 
-    performance.
+    with false discovery rate control.
 License: GPL-3
 Encoding: UTF-8
 RoxygenNote: 7.3.2
@@ -28,8 +27,7 @@ Imports:
     gdsfmt,
     BEDMatrix
 Suggests:
-    testthat (>= 3.0.0),
-    SPACox
+    testthat (>= 3.0.0)
 Config/testthat/edition: 3
 URL: https://github.com/xiaoxiandadada/Cox-MK
 BugReports: https://github.com/xiaoxiandadada/Cox-MK/issues
