@@ -7,11 +7,11 @@
 
 ## Overview
 
-CoxMK implements Cox regression with Multiple knockoffs for survival analysis, providing finite-sample FDR control in high-dimensional genetic studies. 
+CoxMK: a model-X knockoff method for genome-wide survival association analysis, providing SNP-level FDR control while improving power, particularly for biobank-scale survival analyses with low event rates. 
 
 **Features:**
 - 🧬 PLINK format support for large-scale GWAS
-- 📊 Finite-sample FDR control via Mutiple knockoffs  
+- 📊 SNP-level FDR control via Mutiple knockoffs
 - ⚡ Efficient null model fitting using **SPACox** for large datasets
 - 🖥️ Command line interface for easy use
 
