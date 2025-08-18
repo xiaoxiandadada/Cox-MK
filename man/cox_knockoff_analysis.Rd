@@ -19,90 +19,54 @@ cox_knockoff_analysis(
 )
 }
 \arguments{
-\item{plink_prefix}{Path prefix for PLINK files (without extension)}
+\item{plink_prefix}{Character string. Path prefix for PLINK files (.bed, .bim, .fam)}
 
-\item{time}{Survival times}
+\item{time}{Numeric vector. Survival times}
 
-\item{status}{Event indicators (1=event, 0=censored)}
+\item{status}{Numeric vector. Censoring indicator (1 = event, 0 = censored)}
 
-\item{covariates}{Optional covariate matrix/data.frame}
+\item{covariates}{Data frame or matrix. Covariate data (optional)}
 
-\item{sample_ids}{Sample IDs (optional, will be generated from .fam file)}
+\item{sample_ids}{Character vector. Sample IDs to match with genetic data (optional)}
 
-\item{null_model}{Pre-fitted null Cox model or path to RDS file with fitted model (optional)}
+\item{null_model}{Fitted Cox model object for null hypothesis (optional)}
 
-\item{gds_file}{Path to pre-generated GDS file with knockoff data (optional, if provided, knockoffs will be loaded instead of generated)}
+\item{gds_file}{Character string. Path to pre-generated GDS file with knockoffs (optional)}
 
-\item{M}{Number of knockoff copies to generate (default: 5)}
+\item{M}{Integer. Number of knockoff copies to generate (default: 5)}
 
-\item{fdr}{Target false discovery rate (default: 0.05)}
+\item{fdr}{Numeric. Target false discovery rate (default: 0.05)}
 
-\item{method}{Statistical method for W statistics ("median", "difference")}
+\item{method}{Character. Method for computing W statistics ("median", "difference", "ratio")}
 
-\item{output_dir}{Directory to save GDS files (default: extdata folder)}
+\item{output_dir}{Character string. Directory to save intermediate results (optional)}
 }
 \value{
 List containing:
-  \item{selected_vars}{Indices of selected variables}
-  \item{W_stats}{W statistics for all variables}
-  \item{threshold}{Knockoff threshold used}
-  \item{gds_file}{Path to GDS file used}
-  \item{null_model}{Fitted null Cox model}
-  \item{test_results}{SPA test results}
+\itemize{
+  \item W_stats - Vector of W statistics for each variant
+  \item selected_vars - Indices of selected variants
+  \item knockoffs - Generated knockoff matrix (if gds_file not provided)
+  \item summary - Summary statistics of the analysis
+}
 }
 \description{
-Performs a complete Multiple knockoff analysis following the four-step workflow:
-1. Generate knockoff variables from PLINK data and save to GDS format
-2. Fit null Cox model using SPACox for efficient large-scale analysis
-3. Perform SPA testing using original and knockoff variables
-4. Apply knockoff filter for variable selection with FDR control
+Performs a complete knockoff analysis workflow for survival data including 
+knockoff generation, Cox model fitting, association testing, and variable selection.
 }
 \examples{
 \dontrun{
-# Standard workflow with PLINK data
-extdata_path <- system.file('extdata', package = 'CoxMK')
-plink_prefix <- file.path(extdata_path, 'sample')
-pheno_data <- prepare_phenotype(file.path(extdata_path, 'tte_phenotype.txt'))
-covar_data <- load_covariates(file.path(extdata_path, 'covariates.txt'))
-
-# Option 1: Complete analysis in one step
+# Complete workflow with PLINK data
 result <- cox_knockoff_analysis(
-  plink_prefix = plink_prefix,
-  time = pheno_data$time,
-  status = pheno_data$status,
-  covariates = covar_data,
-  M = 3,
-  fdr = 0.1
-)
-
-# Option 2: Step-by-step workflow with GDS file reuse
-# Step 2a: Generate knockoffs and save to GDS file
-knockoffs <- create_knockoffs(
-  X = load_plink_data(plink_prefix)$genotypes,
-  pos = load_plink_data(plink_prefix)$positions,
-  M = 3
-)
-gds_file <- knockoffs$gds_file  # GDS file path
-
-# Step 2b: Fit null model separately  
-null_model <- fit_null_cox_model(
-  time = pheno_data$time,
-  status = pheno_data$status, 
-  covariates = covar_data
-)
-
-# Step 2c: Load knockoffs from GDS file and run analysis
-result <- cox_knockoff_analysis(
-  plink_prefix = plink_prefix,
-  time = pheno_data$time,
-  status = pheno_data$status,
-  covariates = covar_data,
-  null_model = null_model,
-  gds_file = gds_file,  # Use pre-generated GDS file
-  M = 3,
+  plink_prefix = "data/genetics",
+  time = survival_time,
+  status = event_indicator,
+  covariates = covariate_matrix,
+  M = 5,
   fdr = 0.05
 )
-# View selected variables
+
+# View results
 print(result$selected_vars)
 print(result$summary)
 }

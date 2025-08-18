@@ -20,6 +20,9 @@
 #'   \item \code{\link{knockoff_filter}} - Step 4: Apply knockoff filter for variable selection
 #' }
 #' 
+#' @importFrom stats as.dist coef cutree hclust lm.fit quantile sd terms
+#' @importFrom utils read.csv read.table
+#' 
 #' @importFrom stats as.formula complete.cases median na.omit pchisq var
 #' @importFrom Matrix Matrix
 #' @importFrom survival coxph Surv
@@ -34,7 +37,8 @@ NULL
 #' 3. Perform SPA testing using original and knockoff variables
 #' 4. Apply knockoff filter for variable selection with FDR control
 #'
-#' @param plink_prefix Path prefix for PLINK files (without extension)
+#' @param plink_prefix Path prefix for PLINK files (without extension).
+#'   Chromosome information will be automatically extracted from the .bim file.
 #' @param time Survival times
 #' @param status Event indicators (1=event, 0=censored)
 #' @param covariates Optional covariate matrix/data.frame
@@ -102,6 +106,50 @@ NULL
 #' print(result$selected_vars)
 #' print(result$summary)
 #' }
+
+#' Complete Cox Knockoff Analysis Workflow
+#'
+#' Performs a complete knockoff analysis workflow for survival data including 
+#' knockoff generation, Cox model fitting, association testing, and variable selection.
+#'
+#' @param plink_prefix Character string. Path prefix for PLINK files (.bed, .bim, .fam)
+#' @param time Numeric vector. Survival times
+#' @param status Numeric vector. Censoring indicator (1 = event, 0 = censored)
+#' @param covariates Data frame or matrix. Covariate data (optional)
+#' @param sample_ids Character vector. Sample IDs to match with genetic data (optional)
+#' @param null_model Fitted Cox model object for null hypothesis (optional)
+#' @param gds_file Character string. Path to pre-generated GDS file with knockoffs (optional)
+#' @param M Integer. Number of knockoff copies to generate (default: 5)
+#' @param fdr Numeric. Target false discovery rate (default: 0.05)
+#' @param method Character. Method for computing W statistics ("median", "difference", "ratio")
+#' @param output_dir Character string. Directory to save intermediate results (optional)
+#'
+#' @return List containing:
+#' \itemize{
+#'   \item W_stats - Vector of W statistics for each variant
+#'   \item selected_vars - Indices of selected variants
+#'   \item knockoffs - Generated knockoff matrix (if gds_file not provided)
+#'   \item summary - Summary statistics of the analysis
+#' }
+#'
+#' @examples
+#' \dontrun{
+#' # Complete workflow with PLINK data
+#' result <- cox_knockoff_analysis(
+#'   plink_prefix = "data/genetics",
+#'   time = survival_time,
+#'   status = event_indicator,
+#'   covariates = covariate_matrix,
+#'   M = 5,
+#'   fdr = 0.05
+#' )
+#' 
+#' # View results
+#' print(result$selected_vars)
+#' print(result$summary)
+#' }
+#'
+#' @export
 cox_knockoff_analysis <- function(plink_prefix, time, status,
                                  covariates = NULL, sample_ids = NULL,
                                  null_model = NULL, gds_file = NULL, M = 5, fdr = 0.05, method = "median", 
@@ -175,7 +223,12 @@ cox_knockoff_analysis <- function(plink_prefix, time, status,
     cat("   Chromosomes found:", paste(chromosomes, collapse = ", "), "\n")
     
     # Generate knockoffs
-    knockoff_result <- create_knockoffs(X = X_original, pos = pos, M = M)
+    knockoff_result <- create_knockoffs(
+      X = X_original, 
+      pos = pos, 
+      chr_info = chromosomes,  # Pass extracted chromosome numbers
+      M = M
+    )
     X_knockoffs <- knockoff_result$knockoffs
     gds_output <- knockoff_result$gds_file
   }

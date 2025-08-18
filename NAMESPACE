@@ -3,6 +3,7 @@
 export(calculate_w_statistics)
 export(cox_knockoff_analysis)
 export(create_knockoffs)
+export(fit_cox_model_from_files)
 export(knockoff_filter)
 importFrom(Matrix,Matrix)
 importFrom(irlba,irlba)

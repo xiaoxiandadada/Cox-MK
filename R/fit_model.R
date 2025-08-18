@@ -1,45 +1,45 @@
-#Fit Cox Model from Files
+#' Step 2: Fit Cox Model from Files
 #'
-#Fits a null Cox model by reading phenotype and covariate data from files.
-#This function is designed for batch processing and large-scale analysis
-#where data is stored in separate files.
+#' Implements Step 2 of the CoxMK workflow: fitting a null Cox proportional hazards model
+#' by reading phenotype and covariate data from files. This function is designed for 
+#' batch processing and large-scale analysis where data is stored in separate files.
 #'
-#@param phenotype_file Path to CSV file with columns: IID, time, status
-#@param covariate_file Path to CSV file with columns: IID, covar1, covar2, ...
-#@param output_file Path to RDS file to save the fitted null model
-#@param use_spacox Whether to try using SPACox package (default: TRUE)
-#@return Invisible path to the output file
-#@keywords internal
-#@examples
-#\dontrun{
-## Prepare example data files
-#pheno_data <- data.frame(
-#  IID = paste0("ID", 1:100),
-#  time = rexp(100, 0.1),
-#  status = rbinom(100, 1, 0.3)
-#)
-#covar_data <- data.frame(
-#  IID = paste0("ID", 1:100),
-#  age = rnorm(100, 50, 10),
-#  sex = rbinom(100, 1, 0.5)
-#)
-#
-#write.csv(pheno_data, "phenotype.csv", row.names = FALSE)
-#write.csv(covar_data, "covariates.csv", row.names = FALSE)
-#
-## Fit model from files
-#fit_cox_model_from_files(
-#  phenotype_file = "phenotype.csv",
-#  covariate_file = "covariates.csv", 
-#  output_file = "null_model.rds"
-#)
-#
-## Load the fitted model
-#model_info <- readRDS("null_model.rds")
-#}
-fit_cox_model_from_files <- function(phenotype_file, covariate_file, output_file, 
+#' @param phenotype_file Path to CSV file with columns: IID, time, status
+#' @param covariate_file Path to CSV file with columns: IID, covar1, covar2, ...
+#' @param output_file Path to RDS file to save the fitted null model
+#' @param use_spacox Whether to try using SPACox package (default: TRUE)
+#' @return Invisible path to the output file
+#' @export
+#' @examples
+#' \dontrun{
+#' # Prepare example data files
+#' pheno_data <- data.frame(
+#'   IID = paste0("ID", 1:100),
+#'   time = rexp(100, 0.1),
+#'   status = rbinom(100, 1, 0.3)
+#' )
+#' covar_data <- data.frame(
+#'   IID = paste0("ID", 1:100),
+#'   age = rnorm(100, 50, 10),
+#'   sex = rbinom(100, 1, 0.5)
+#' )
+#' 
+#' write.csv(pheno_data, "phenotype.csv", row.names = FALSE)
+#' write.csv(covar_data, "covariates.csv", row.names = FALSE)
+#' 
+#' # Step 2: Fit null Cox model from files
+#' fit_cox_model_from_files(
+#'   phenotype_file = "phenotype.csv",
+#'   covariate_file = "covariates.csv", 
+#'   output_file = "null_model.rds"
+#' )
+#' 
+#' # Load the fitted model for Step 3
+#' model_info <- readRDS("null_model.rds")
+#' }
+fit_cox_model_from_files <- function(phenotype_file, covariate_file, output_file,
                                    use_spacox = TRUE) {
-  
+
   #
   if (!file.exists(phenotype_file)) {
     stop("Phenotype file not found: ", phenotype_file)
@@ -59,27 +59,27 @@ fit_cox_model_from_files <- function(phenotype_file, covariate_file, output_file
   if (length(missing_cols) > 0) {
     stop("Missing required columns in phenotype file: ", paste(missing_cols, collapse = ", "))
   }
-  
+
   cat("  - Loaded", nrow(pheno_data), "samples\n")
   cat("  - Events:", sum(pheno_data$status), "/", nrow(pheno_data), 
       "(", round(100 * sum(pheno_data$status) / nrow(pheno_data), 1), "%)\n")
-  
+
   #
   cat("Loading covariate data from:", covariate_file, "\n")
   covar_data <- read.csv(covariate_file, stringsAsFactors = FALSE)
-  
+
   # Check IID column exists
   if (!"IID" %in% colnames(covar_data)) {
     stop("IID column not found in covariate file")
   }
-  
+
   cat("  - Loaded", nrow(covar_data), "samples\n")
   cat("  - Covariates:", paste(setdiff(colnames(covar_data), "IID"), collapse = ", "), "\n")
-  
+
   #
   cat("Merging phenotype and covariate data...\n")
   merged_data <- merge(pheno_data, covar_data, by = "IID", all.x = TRUE)
-  
+
   # Check for missing data after merge
   n_complete <- sum(complete.cases(merged_data))
   if (n_complete < nrow(merged_data)) {
@@ -87,14 +87,14 @@ fit_cox_model_from_files <- function(phenotype_file, covariate_file, output_file
     merged_data <- merged_data[complete.cases(merged_data), ]
     cat("  Using", nrow(merged_data), "complete samples\n")
   }
-  
+
   #
   cat("Fitting null Cox model...\n")
-  
+
   # Fit the model
   if (use_spacox && requireNamespace("SPACox", quietly = TRUE)) {
     cat("  Using SPACox for null model fitting...\n")
-    
+
     # Prepare formula
     covar_names <- setdiff(colnames(merged_data), c("IID", "time", "status"))
     if (length(covar_names) > 0) {
@@ -102,9 +102,9 @@ fit_cox_model_from_files <- function(phenotype_file, covariate_file, output_file
     } else {
       formula_str <- "Surv(time, status) ~ 1"
     }
-    
+
     cat("  Formula:", formula_str, "\n")
-    
+
     # Fit SPACox null model
     tryCatch({
       if (!requireNamespace("SPACox", quietly = TRUE)) {
@@ -116,10 +116,10 @@ fit_cox_model_from_files <- function(phenotype_file, covariate_file, output_file
         pIDs = merged_data$IID,
         gIDs = merged_data$IID  # For unrelated samples
       )
-      
+
       cat("  - SPACox null model fitted successfully!\n")
       model_type <- "SPACox"
-      
+
     }, error = function(e) {
       cat("  SPACox fitting failed:", e$message, "\n")
       cat("  Falling back to standard Cox regression...\n")

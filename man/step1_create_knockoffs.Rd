@@ -15,13 +15,13 @@ create_knockoffs(
   start = NULL,
   end = NULL,
   corr_max = 0.75,
-  maxN.neighbor = Inf,
-  maxBP.neighbor = 1e+05,
-  n.AL = floor(10 * nrow(X)^(1/3) * log(nrow(X))),
-  thres.ultrarare = 25,
-  R2.thres = 1,
-  prob.eps = 1e-12,
-  irlba.maxit = 1500
+  maxN_neighbor = Inf,
+  maxBP_neighbor = 1e+05,
+  n_AL = floor(10 * nrow(X)^(1/3) * log(nrow(X))),
+  thres_ultrarare = 25,
+  R2_thres = 1,
+  prob_eps = 1e-12,
+  irlba_maxit = 1500
 )
 }
 \arguments{
@@ -32,8 +32,11 @@ genotype dosages.}
 \item{pos}{A numeric vector of SNP positions (in base pairs) for linkage
 disequilibrium-aware knockoff generation.}
 
-\item{chr_info}{Optional data frame with chromosome information from BIM file.
-If provided, will extract chromosome number automatically.}
+\item{chr_info}{Optional chromosome information. Can be either:
+(1) A data frame with chromosome information from BIM file containing 
+    a column named "chr" or "CHR" with chromosome numbers, or
+(2) A vector of chromosome numbers directly.
+Chromosome information will be automatically extracted.}
 
 \item{sample_ids}{A character vector of sample IDs (default: NULL, will generate)}
 
@@ -51,24 +54,24 @@ can improve statistical power but increase computational cost.}
 \item{corr_max}{Maximum correlation threshold for clustering variants
 (default: 0.75). Higher values create fewer, larger clusters.}
 
-\item{maxN.neighbor}{Maximum number of neighboring variants to consider 
+\item{maxN_neighbor}{Maximum number of neighboring variants to consider
 for each variant (default: Inf).}
 
-\item{maxBP.neighbor}{Maximum base pair distance to consider variants as
+\item{maxBP_neighbor}{Maximum base pair distance to consider variants as
 neighbors (default: 100,000 bp).}
 
-\item{n.AL}{Number of samples to use for adaptive lasso fitting 
+\item{n_AL}{Number of samples to use for adaptive lasso fitting
 (default: automatically determined based on sample size).}
 
-\item{thres.ultrarare}{Minimum minor allele count threshold for variant
+\item{thres_ultrarare}{Minimum minor allele count threshold for variant
 inclusion (default: 25).}
 
-\item{R2.thres}{R-squared threshold for model fitting (default: 1).}
+\item{R2_thres}{R-squared threshold for model fitting (default: 1).}
 
-\item{prob.eps}{Minimum probability value to prevent numerical issues
+\item{prob_eps}{Minimum probability value to prevent numerical issues
 (default: 1e-12).}
 
-\item{irlba.maxit}{Maximum iterations for truncated SVD (default: 1500).}
+\item{irlba_maxit}{Maximum iterations for truncated SVD (default: 1500).}
 }
 \value{
 If save_gds is TRUE, returns the path to the saved GDS file.
