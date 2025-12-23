@@ -96,29 +96,64 @@ create_knockoffs <- function(
     stop("Length of pos must equal number of columns in X")
   }
 
-  # Extract chromosome number from chr_info if provided
+  # Extract chromosome assignments
   if (!is.null(chr_info)) {
     if (is.data.frame(chr_info) && ("chr" %in% names(chr_info) || "CHR" %in% names(chr_info))) {
-      # Handle data frame with "chr" or "CHR" column names
       chr_col <- if ("chr" %in% names(chr_info)) "chr" else "CHR"
-      unique_chrs <- unique(chr_info[[chr_col]])
-      if (length(unique_chrs) == 1) {
-        chr <- unique_chrs[1]
-      } else {
-        chr <- unique_chrs[1]  # Use first chromosome if multiple
-        warning("Multiple chromosomes found, using chr ", chr)
+      chr_vector <- chr_info[[chr_col]]
+    } else {
+      chr_vector <- as.vector(chr_info)
+    }
+  } else {
+    chr_vector <- rep(1, p)
+  }
+
+  unique_chrs <- unique(chr_vector)
+
+  # Process chromosomes sequentially if multiple are present
+  if (length(unique_chrs) > 1) {
+    cat("Multiple chromosomes detected (", paste(unique_chrs, collapse = ", "),
+        "). Generating knockoffs chromosome-by-chromosome...\n", sep = "")
+
+    combined_knockoffs <- lapply(seq_len(M), function(i) matrix(0, n, p))
+    gds_paths <- character(0)
+
+    for (chr_val in unique_chrs) {
+      idx <- which(chr_vector == chr_val)
+      sub_chr_info <- if (is.data.frame(chr_info)) chr_info[idx, , drop = FALSE] else rep(chr_val, length(idx))
+      sub_result <- create_knockoffs(
+        X = X[, idx, drop = FALSE],
+        pos = pos[idx],
+        chr_info = sub_chr_info,
+        sample_ids = sample_ids,
+        M = M,
+        save_gds = save_gds,
+        output_dir = output_dir,
+        start = NULL,
+        end = NULL,
+        corr_max = corr_max,
+        maxN_neighbor = maxN_neighbor,
+        maxBP_neighbor = maxBP_neighbor,
+        n_AL = n_AL,
+        thres_ultrarare = thres_ultrarare,
+        R2_thres = R2_thres,
+        prob_eps = prob_eps,
+        irlba_maxit = irlba_maxit
+      )
+
+      for (k in seq_len(M)) {
+        combined_knockoffs[[k]][, idx] <- sub_result$knockoffs[[k]]
       }
-    } else if (is.vector(chr_info)) {
-      # Handle chromosome vector directly
-      unique_chrs <- unique(chr_info)
-      if (length(unique_chrs) == 1) {
-        chr <- unique_chrs[1]
-      } else {
-        chr <- unique_chrs[1]  # Use first chromosome if multiple
-        warning("Multiple chromosomes found, using chr ", chr)
+
+      if (!is.null(sub_result$gds_file)) {
+        gds_paths <- c(gds_paths, sub_result$gds_file)
       }
     }
+
+    return(list(knockoffs = combined_knockoffs, gds_file = gds_paths))
   }
+
+  chr <- unique_chrs[1]
 
   # Set default values
   if (is.null(start)) start <- min(pos)

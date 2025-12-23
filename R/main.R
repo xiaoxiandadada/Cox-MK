@@ -113,10 +113,12 @@ NULL
 #' knockoff generation, Cox model fitting, association testing, and variable selection.
 #'
 #' @param plink_prefix Character string. Path prefix for PLINK files (.bed, .bim, .fam)
-#' @param time Numeric vector. Survival times
-#' @param status Numeric vector. Censoring indicator (1 = event, 0 = censored)
-#' @param covariates Data frame or matrix. Covariate data (optional)
+#' @param time Numeric vector. Survival times (optional when \code{phenotype_file} is provided)
+#' @param status Numeric vector. Censoring indicator (1 = event, 0 = censored) (optional when \code{phenotype_file} is provided)
+#' @param covariates Data frame or matrix. Covariate data (optional, or loaded via \code{covariate_file})
 #' @param sample_ids Character vector. Sample IDs to match with genetic data (optional)
+#' @param phenotype_file Character string. Path to phenotype file with columns \code{time} and \code{status}
+#' @param covariate_file Character string. Path to covariate file (optional)
 #' @param null_model Fitted Cox model object for null hypothesis (optional)
 #' @param gds_file Character string. Path to pre-generated GDS file with knockoffs (optional)
 #' @param M Integer. Number of knockoff copies to generate (default: 5)
@@ -128,6 +130,8 @@ NULL
 #' \itemize{
 #'   \item W_stats - Vector of W statistics for each variant
 #'   \item selected_vars - Indices of selected variants
+#'   \item q_values - Knockoff q-values corresponding to each variant
+#'   \item variant_table - Data frame with per-variant summary (chromosome, position, test statistic, W, q, selection flag)
 #'   \item knockoffs - Generated knockoff matrix (if gds_file not provided)
 #'   \item summary - Summary statistics of the analysis
 #' }
@@ -137,9 +141,8 @@ NULL
 #' # Complete workflow with PLINK data
 #' result <- cox_knockoff_analysis(
 #'   plink_prefix = "data/genetics",
-#'   time = survival_time,
-#'   status = event_indicator,
-#'   covariates = covariate_matrix,
+#'   phenotype_file = file.path(extdata_path, 'tte_phenotype.txt'),
+#'   covariate_file = file.path(extdata_path, 'covariates.txt'),
 #'   M = 5,
 #'   fdr = 0.05
 #' )
@@ -150,16 +153,40 @@ NULL
 #' }
 #'
 #' @export
-cox_knockoff_analysis <- function(plink_prefix, time, status,
+cox_knockoff_analysis <- function(plink_prefix, time = NULL, status = NULL,
                                  covariates = NULL, sample_ids = NULL,
+                                 phenotype_file = NULL, covariate_file = NULL,
                                  null_model = NULL, gds_file = NULL, M = 5, fdr = 0.05, method = "median", 
                                  output_dir = NULL) {
+
+  # Load phenotype data if a file is provided
+  if (!is.null(phenotype_file)) {
+    pheno_data <- prepare_phenotype(phenotype_file)
+    time <- pheno_data$time
+    status <- pheno_data$status
+    if (is.null(sample_ids)) {
+      if ("sample_id" %in% names(pheno_data)) {
+        sample_ids <- pheno_data$sample_id
+      } else if ("IID" %in% names(pheno_data)) {
+        sample_ids <- pheno_data$IID
+      }
+    }
+  }
+  
+  # Load covariate data if provided and covariates not supplied directly
+  if (is.null(covariates) && !is.null(covariate_file)) {
+    covariates <- load_covariates(covariate_file)
+  }
 
   # Validate input parameters
   if (!file.exists(paste0(plink_prefix, ".bed")) || 
       !file.exists(paste0(plink_prefix, ".bim")) ||
       !file.exists(paste0(plink_prefix, ".fam"))) {
     stop("PLINK files (.bed, .bim, .fam) not found with prefix: ", plink_prefix)
+  }
+  
+  if (is.null(time) || is.null(status)) {
+    stop("Please provide either time/status vectors or a phenotype_file with the required columns.")
   }
   
   if (length(time) != length(status)) {
@@ -254,7 +281,8 @@ cox_knockoff_analysis <- function(plink_prefix, time, status,
       cat("- SPACox null model fitted successfully!\n")
     } else {
       cat("SPACox not available, will use traditional Cox regression...\n")
-      cat("- Traditional Cox regression will be used for testing\n")
+      null_model <- fit_null_cox_model(time = time, status = status, covariates = covariates)
+      cat("- Traditional Cox regression fitted successfully!\n")
     }
   } else if (is.character(null_model) && length(null_model) == 1) {
     # Load model from file
@@ -286,7 +314,13 @@ cox_knockoff_analysis <- function(plink_prefix, time, status,
   cat("\n3. SPA TESTING AND ASSOCIATION ANALYSIS\n")
 
   cat("   Testing original variables...\n")
-  orig_results <- perform_association_testing(X_original, null_model)
+  orig_results <- perform_association_testing(
+    X = X_original,
+    null_model = null_model,
+    time = time,
+    status = status,
+    covariates = covariates
+  )
 
   cat("   Testing knockoff variables...\n")
   M <- length(X_knockoffs)
@@ -294,7 +328,13 @@ cox_knockoff_analysis <- function(plink_prefix, time, status,
   
   for (k in seq_len(M)) {
     cat("     Knockoff copy", k, "/", M, "\n")
-    knockoff_results[[k]] <- perform_association_testing(X_knockoffs[[k]], null_model)
+    knockoff_results[[k]] <- perform_association_testing(
+      X = X_knockoffs[[k]],
+      null_model = null_model,
+      time = time,
+      status = status,
+      covariates = covariates
+    )
   }
   
   test_results <- list(
@@ -311,12 +351,20 @@ cox_knockoff_analysis <- function(plink_prefix, time, status,
   # Extract test statistics
   t_orig <- orig_results$test_stats
   
-  # For multiple knockoffs, combine test statistics (use median as example)
+  # Combine knockoff statistics into matrix
   t_knock_matrix <- do.call(cbind, lapply(knockoff_results, function(x) x$test_stats))
-  t_knock_combined <- apply(t_knock_matrix, 1, median)
   
-  # Calculate W statistics using the same method as calculate_w_statistics
-  W_stats <- calculate_w_statistics(t_orig, t_knock_combined, method = method)
+  # Calculate W statistics using the selected method
+  W_stats <- calculate_w_statistics(t_orig, t_knock_matrix, method = method)
+  
+  # Derive knockoff-based q-values
+  tau_method <- if (method %in% c("median", "max")) method else "median"
+  mk_res <- mk_statistic(t_orig, t_knock_matrix, method = tau_method)
+  q_values <- mk_q_by_stat(
+    kappa = mk_res[, "kappa"],
+    tau = mk_res[, "tau"],
+    M = ncol(t_knock_matrix)
+  )
   
   cat("   Applying knockoff filter with FDR =", fdr, "\n")
   selected_vars <- knockoff_filter(W_stats, fdr = fdr)
@@ -332,29 +380,48 @@ cox_knockoff_analysis <- function(plink_prefix, time, status,
   
   # Print analysis summary
   cat("\n=== ANALYSIS SUMMARY ===\n")
-  cat("   Total variables tested:", length(filter_results$W_stats), "\n")
-  cat("   Variables selected:", length(filter_results$selected_vars), "\n")
-  cat("   Selection proportion:", round(length(filter_results$selected_vars) / 
-                                        length(filter_results$W_stats) * 100, 2), "%\n")
+  total_vars <- length(W_stats)
+  cat("   Total variables tested:", total_vars, "\n")
+  cat("   Variables selected:", length(selected_vars), "\n")
+  cat("   Selection proportion:", round(length(selected_vars) / 
+                                        total_vars * 100, 2), "%\n")
   cat("   Threshold used:", round(filter_results$threshold, 4), "\n")
+  cat("   Minimum q-value:", round(min(q_values, na.rm = TRUE), 4), "\n")
   if (!is.null(gds_output)) {
-    cat("   Knockoff data saved to:", gds_output, "\n")
+    cat("   Knockoff data saved to:\n")
+    cat(paste("      ", gds_output, collapse = "\n"), "\n")
   }
+
+  variant_table <- data.frame(
+    SNP_Index = seq_len(total_vars),
+    SNP = bim_data$snp,
+    Chromosome = bim_data$chr,
+    Position = bim_data$pos,
+    Test_Statistic = t_orig,
+    P_value = orig_results$p_values,
+    W_statistic = W_stats,
+    q_value = q_values,
+    Selected = seq_len(total_vars) %in% selected_vars,
+    stringsAsFactors = FALSE
+  )
   
   # Return results
   results <- list(
     selected_vars = filter_results$selected_vars,
     W_stats = filter_results$W_stats,
+    q_values = q_values,
     threshold = filter_results$threshold,
     gds_file = gds_output,
     null_model = null_model,
     test_results = test_results,
     method = method,
     fdr = fdr,
+    variant_table = variant_table,
     summary = list(
-      n_variables = length(filter_results$W_stats),
+      n_variables = total_vars,
       n_selected = length(filter_results$selected_vars),
-      selection_rate = length(filter_results$selected_vars) / length(filter_results$W_stats)
+      selection_rate = length(filter_results$selected_vars) / total_vars,
+      min_q_value = min(q_values, na.rm = TRUE)
     )
   )
   

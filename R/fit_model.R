@@ -296,7 +296,13 @@ fit_null_cox_model <- function(time, status, covariates = NULL) {
     stop("survival package is required")
   }
   
-  null_model <- survival::coxph(as.formula(formula_str), data = model_data)
+  null_model <- survival::coxph(
+    as.formula(formula_str),
+    data = model_data,
+    model = TRUE,
+    x = TRUE,
+    y = TRUE
+  )
   
   # Add metadata
   attr(null_model, "model_type") <- "Standard Cox"
